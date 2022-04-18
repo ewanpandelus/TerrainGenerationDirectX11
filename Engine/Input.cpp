@@ -23,6 +23,9 @@ void Input::Initialise(HWND window)
 	m_GameInput.left		= false;
 	m_GameInput.rotRight	= false;
 	m_GameInput.rotLeft		= true;
+	m_GameInput.leftMouse = false;
+	m_GameInput.p = false;
+
 
 	prevX = 0;
 	xChange = 0;
@@ -64,6 +67,9 @@ void Input::Update()
 
 	if (mouse.leftButton) m_GameInput.leftMouse = true;
 	else m_GameInput.leftMouse = false;
+	
+	if (kb.P) m_GameInput.p = true;
+	else m_GameInput.p = false;
 
 	float newX = mouse.x;
 	if (prevX != 0) {

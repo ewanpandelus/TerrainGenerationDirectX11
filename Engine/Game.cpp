@@ -60,7 +60,7 @@ void Game::Initialize(HWND window, int width, int height)
     ImGui::StyleColorsDark();
     ImGui_ImplWin32_Init(window);		//tie to our window
     ImGui_ImplDX11_Init(m_deviceResources->GetD3DDevice(), m_deviceResources->GetD3DDeviceContext());	//tie to directx
-
+    GetClientRect(window, &m_ScreenDimensions);
     m_fullscreenRect.left = 0;
     m_fullscreenRect.top = 0;
     m_fullscreenRect.right = 800;
@@ -141,8 +141,18 @@ void Game::Update(DX::StepTimer const& timer)
 {
     //this is hacky,  i dont like this here.  
     auto device = m_deviceResources->GetD3DDevice();
-    float deltaTime = timer.GetElapsedSeconds();
-    
+     m_elapsedTime += timer.GetElapsedSeconds();
+    XMVECTOR rayCast;
+    if (m_gameInputCommands.leftMouse) {
+        rayCast = MousePicking(SimpleMath::Vector3(0.0f, -0.6f, 0.0f),0.1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
+    }
+
+    if (m_gameInputCommands.p&&m_elapsedTime>1) 
+    { 
+      m_playMode = !m_playMode; 
+      m_elapsedTime = 0;
+    }
+
 
     if (m_playMode)
     {
@@ -196,9 +206,14 @@ void Game::Update(DX::StepTimer const& timer)
     }
     else 
     {
-        //setup camera
-        m_Camera01.setPosition(Vector3(-2.5f, 4.0f, 5.0f));
-        m_Camera01.setRotation(Vector3(90.0f, 89.5f, 0.0f));	
+        Vector3 currentPos = m_Camera01.getPosition();
+        if (currentPos != SimpleMath::Vector3(-2.5f, m_Terrain.GetCameraYPos(), 5.0f)) {
+
+            SimpleMath::Vector3 difference = SimpleMath::Vector3(-2.0f, (m_Terrain.GetCameraYPos()*0.1f)+4, 5.0f) - currentPos;
+            m_Camera01.setPosition(m_Camera01.getPosition() + difference * 0.03f);
+            // m_Camera01.setPosition(Vector3(-2.5f, 4.0f, 5.0f));
+            m_Camera01.setRotation(Vector3(90.0f, 89.5f, 0.0f));
+        }
 
     }
     if (m_gameInputCommands.generate)
@@ -214,7 +229,7 @@ void Game::Update(DX::StepTimer const& timer)
     //m_Camera01.setPosition(position);
     m_Camera01.Update();
 
-    postProcess = std::make_unique<BasicPostProcess>(device);
+    m_postProcess = std::make_unique<BasicPostProcess>(device);
     m_view = m_Camera01.getCameraMatrix();
     m_world = Matrix::Identity;
 
@@ -312,10 +327,10 @@ void Game::Render()
     //prepare transform for floor object. 
 
     if (m_postProcessProperties.GetPostProcess()) {
-        postProcess->SetSourceTexture(m_FirstRenderPass->getShaderResourceView());
-        postProcess->SetBloomBlurParameters(1,m_postProcessProperties.GetBloomBlurStength(),m_postProcessProperties.GetBloomBrightness());
-        postProcess->SetEffect(BasicPostProcess::BloomBlur);
-        postProcess->Process(context);
+        m_postProcess->SetSourceTexture(m_FirstRenderPass->getShaderResourceView());
+        m_postProcess->SetBloomBlurParameters(1,m_postProcessProperties.GetBloomBlurStength(),m_postProcessProperties.GetBloomBrightness());
+        m_postProcess->SetEffect(BasicPostProcess::BloomBlur);
+        m_postProcess->Process(context);
     }
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -576,10 +591,10 @@ void Game::SetupGUI()
         m_Terrain.TerrainTypeTicked();
     }
     if (m_Terrain.GetColourTerrain()) {
-        ImGui::ColorPicker3("Bottom Terrain Colour", m_Terrain.SetBottomTerrainColorImGUI());
-        ImGui::ColorPicker3("Slope Terrain Colour", m_Terrain.SetSecondTerrainColourImGUI());
-        ImGui::ColorPicker3("Sand Colour", m_Terrain.SetThirdTerrainColorImGUI());
-        ImGui::ColorPicker3("Snow Colour", m_Terrain.SetTopTerrainColorImGUI());
+        ImGui::ColorEdit3("Bottom Terrain Colour", m_Terrain.SetBottomTerrainColorImGUI());
+        ImGui::ColorEdit3("Slope Terrain Colour", m_Terrain.SetSecondTerrainColourImGUI());
+        ImGui::ColorEdit3("Sand Colour", m_Terrain.SetThirdTerrainColorImGUI());
+        ImGui::ColorEdit3("Snow Colour", m_Terrain.SetTopTerrainColorImGUI());
     }
     ImGui::End();
 
@@ -591,6 +606,26 @@ void Game::SetupGUI()
 
     ImGui::End();
    
+}
+ XMVECTOR Game::MousePicking(SimpleMath::Vector3 terrainPos,  float terrainScale, SimpleMath::Vector3 terrainOrientation)
+{
+ 
+    
+        const XMVECTOR nearSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 0.0f, 1.0f);
+        const XMVECTOR farSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 1.0f, 1.0f);
+
+        const XMVECTORF32 scale = {terrainScale,		terrainScale,		terrainScale };
+        const XMVECTORF32 translate = { terrainPos.x,		terrainPos.y,	terrainPos.z };
+        XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(terrainOrientation.y * 3.1415 / 180, terrainOrientation.x * 3.1415 / 180,
+            terrainOrientation.z * 3.1415 / 180);
+
+
+        XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
+        DirectX::SimpleMath::Vector3 nearPoint = XMVector3Unproject(nearSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
+        DirectX::SimpleMath::Vector3 farPoint = XMVector3Unproject(farSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
+
+
+        return farPoint - nearPoint;
 }
 
 

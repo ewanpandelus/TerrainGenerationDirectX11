@@ -14,6 +14,7 @@ struct InputCommands
 	bool rotLeft;
 	bool generate;
 	bool leftMouse;
+	bool p;
 };
 
 

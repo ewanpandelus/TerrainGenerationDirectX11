@@ -71,7 +71,7 @@ private:
     void CreateWindowSizeDependentResources();
     void SetupGUI();
     void CreateNormalMapEffect(ID3D11DeviceContext* context, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalTexture);
-
+    XMVECTOR MousePicking(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation);
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -124,7 +124,7 @@ private:
     RenderTexture* m_FirstRenderPass;
     RECT																	m_fullscreenRect;
     RECT																	m_CameraViewRect;
-
+    RECT		                                                            m_ScreenDimensions;
 
 
 #ifdef DXTK_AUDIO
@@ -146,7 +146,7 @@ private:
     DirectX::SimpleMath::Matrix                                             m_world;
     DirectX::SimpleMath::Matrix                                             m_view;
     DirectX::SimpleMath::Matrix                                             m_projection;
-    std::unique_ptr<BasicPostProcess>                                       postProcess;
+    std::unique_ptr<BasicPostProcess>                                       m_postProcess;
     RayTriangleIntersection                                                 m_rayTriIntersect;
     MouseRay                                                                m_mouseRay;
     CameraMovement                                                          m_CameraMovement;
@@ -157,15 +157,8 @@ private:
     float                                                                   m_CameraSmoothMovement = 0.03;
     int                                                                     m_screenWidth;
     int                                                                     m_screenHeight;
-    float                                                                   _elapsedTime = 0;
-
-    float                                                                   accumulatedVerticalDifference = 0;
-    int                                                                     counter = 0;
-
-    float                                                                   yToWorkTowards = 0;
-
+    float                                                                   m_elapsedTime = 0;
     bool                                                                    m_playMode = true;
-
-    float xChange;
-    float yChange;
+    float                                                                   xChange;
+    float                                                                   yChange;
 };

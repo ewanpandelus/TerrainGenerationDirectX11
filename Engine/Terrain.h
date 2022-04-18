@@ -11,11 +11,13 @@ class Terrain
 private:
 	PerlinNoise perlinNoise;
 	NoiseFunctions noiseFunctions;
+	bool m_inverseHeightmap = false;
 	float m_scale = 10;
 	float m_minHeight = 0;
 	float m_maxHeight = 0;
+	float m_flattenPercentage = 20;
 	float m_bloomThreshold = 0;
-
+	float m_cameraYPos = 0;
 	std::vector<bool*> terrainTypes;
 	std::vector<bool> prevTerrainTypes;
 
@@ -48,8 +50,8 @@ private:
 public:
 	Terrain();
 	~Terrain();
-	float GenerateValueWithActiveNoiseFunction(int i, int j, int terrainType, int scale);
-	float Redistribution(float nx, float ny, float exp);
+	float GenerateValueWithActiveNoiseFunction(int i, int j, int terrainType, bool terraced);
+	float Redistribution(float nx, float ny, float exp, float* noiseFunc(float, float));
 	float RidgeNoise(float x, float y);
 	bool Initialize(ID3D11Device*, int terrainWidth, int terrainHeight);
 	void Render(ID3D11DeviceContext*);
@@ -57,7 +59,7 @@ public:
 	bool Update();
 	float InverseLerp(float u, float v, float t);
 	float Lerp(float u, float v, float t);
-
+	void CalculateMaxMinNoiseHeight(float y, float* maxNoiseHeight, float* minNoiseHeight);
 	
 	void TerrainTypeTicked();
 	float* SetBottomTerrainColorImGUI();
@@ -79,7 +81,7 @@ public:
 	bool* GetFBMNoise();
 	bool* GetRidgeNoise();
 	bool* SetColourTerrain();
-
+	float GetCameraYPos();
 	float* SetTerrainHeightPosition();
 	bool GetColourTerrain();
 	std::vector<Triangle> GetTriangleArray();

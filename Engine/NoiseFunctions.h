@@ -2,6 +2,8 @@
 #include "pch.h"
 #include "PerlinNoise.h";
 
+
+
 using namespace DirectX;
 
 class NoiseFunctions
@@ -9,16 +11,19 @@ class NoiseFunctions
 private:
 	PerlinNoise perlinNoise;
 	std::vector<SimpleMath::Vector2> randomPoints;
+	
+
 public:
 
 	~NoiseFunctions();
-
-
-
+	void Setup();
+	float PerlinNoise(float x, float y, float scale, float freq);
+	float RidgeNoise(float x, float y, float scale, float freq);
 	float snoise(SimpleMath::Vector2 v);
 	float RidgedMF(SimpleMath::Vector2 p);
 	void PopulateRandomPoints(int width, int height, int numPoints, int scale);
-	float VoronoiTesselation(int x, int y, int scale);
+	float VoronoiTesselation(int x, int y);
+
 
 private:
 	float Ridge(float h, float offset);

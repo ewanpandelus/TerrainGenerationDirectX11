@@ -107,3 +107,6 @@ float Camera::getRotationSpeed()
 {
 	return m_camRotRate;
 }
+DirectX::SimpleMath::Vector3 Camera::getLookAt() {
+	return m_lookat;
+}

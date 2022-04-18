@@ -85,6 +85,12 @@ float4  RockTexBlend(float slope, float4 textureColor, float4 grassColor, float4
 	}
 	return textureColor;
 }
+float4 ScaleTexAllDirections(Texture2D _tex, float3 scaledWorldPos, float3 blendAxes) {
+	float3 xProj = _tex.Sample(SampleType, scaledWorldPos.xy*4) * blendAxes.x;
+	float3 yProj = _tex.Sample(SampleType, scaledWorldPos.xz*4) * blendAxes.y;
+	float3 zProj = _tex.Sample(SampleType, scaledWorldPos.xy*4) * blendAxes.z;
+	return float4((xProj+yProj+zProj)/3, 1);
+}
 float4  SnowTexBlend(float slope, float4 textureColor, float4 grassColor, float4 slopeColor, float4 snowColor) {
 	float blendAmount;
 	if (slope < 0.2)
@@ -127,8 +133,14 @@ float4 main(InputType input) : SV_TARGET
 	float4 lightWaterColour;
 	float4 sandColour; 
 
+
+	float3 blendAxes = abs(input.normal);
+	blendAxes /= (blendAxes.x + blendAxes.y + blendAxes.z);
+
 	grassTex = grassTexture.Sample(SampleType, input.tex) *bottomColour;
+	//slopeTex = ScaleTexAllDirections(slopeTexture, input.position3D, blendAxes)*secondColour;
 	slopeTex = slopeTexture.Sample(SampleType, input.tex)  *secondColour;
+	//rockTex = ScaleTexAllDirections(rockTexture, input.position3D, blendAxes) * secondColour;
 	rockTex = rockTexture.Sample(SampleType, input.tex/2)   *secondColour;
 	snowTex = snowTexture.Sample(SampleType, input.tex) * topColour;
 	waterTex = waterTexture.Sample(SampleType, input.tex / 5);
@@ -138,12 +150,8 @@ float4 main(InputType input) : SV_TARGET
 	lightWaterColour = waterTex * float4(1.0, 1.0, 1.0, 1.0);
 	
 
-	float3 scaledWorldPos = input.position3D;
-	float3 blendAxes = abs(input.normal);
-	blendAxes /= (blendAxes.x + blendAxes.y + blendAxes.z);
-	float3 xProj = snowTexture.Sample(SampleType, scaledWorldPos.yz) * blendAxes.x;
-	float3 yProj = snowTexture.Sample(SampleType, scaledWorldPos.xz) * blendAxes.y;
-	float3 zProj = snowTexture.Sample(SampleType, scaledWorldPos.xy) * blendAxes.z;
+
+
 
 
 	float slope;
