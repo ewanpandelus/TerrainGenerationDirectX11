@@ -45,10 +45,17 @@ private:
 	};
 	struct TerrainColourBufferType
 	{
-		DirectX::SimpleMath::Vector4 bottomColour;
-		DirectX::SimpleMath::Vector4 secondColour;
-		DirectX::SimpleMath::Vector4 thirdColour;
-		DirectX::SimpleMath::Vector4 topColour;
+		DirectX::SimpleMath::Vector4 sandColour;
+		DirectX::SimpleMath::Vector4 grassColour;
+		DirectX::SimpleMath::Vector4 mellowSlopeColour;
+		DirectX::SimpleMath::Vector4 snowColour;
+	};
+	struct TerrainExtraVariablesBufferType
+	{
+		DirectX::SimpleMath::Vector4 overwritesColour;
+		DirectX::SimpleMath::Vector4 waterColour;
+		DirectX::SimpleMath::Vector4 steepSlopeColour;
+		float pad3;
 	};
 
 	//buffer to pass in camera world Position
@@ -66,7 +73,7 @@ private:
 	ID3D11SamplerState* m_sampleState;
 	ID3D11Buffer* m_lightBuffer;
 	ID3D11Buffer* m_timeBuffer;
-	ID3D11Buffer* m_noiseHeightBuffer;
-
+	ID3D11Buffer* m_terrainColourBuffer;
+	ID3D11Buffer* m_terrainExtraVariablesBuffer;
 };
 

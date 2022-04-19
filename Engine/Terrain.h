@@ -22,15 +22,17 @@ private:
 	std::vector<bool> prevTerrainTypes;
 
 
-	float m_bottomTerrainColour[3] = { 1,1,1 };
-	float m_secondTerrainColour[3] = { 1,1,1 };
-	float m_thirdTerrainColour[3] = { 1,1,1 };
-	float m_topTerrainColour[3] = { 1,1,1 };
+	float m_waterColour[3] = { 1,1,1 };
+	float m_sandColour[3] = { 1,1,1 };
+	float m_grassColour[3] = { 1,1,1 };
+	float m_mellowSlopeColour[3] = { 1,1,1 };
+	float m_steepSlopeColour[3] = { 1,1,1 };
+	float m_snowColour[3] = { 1,1,1 };
 	float m_terrainOffset = 0;
 
 	float m_frequency, m_amplitude, m_lacunarity, m_persistance, m_octaves, m_offset;
-	bool worley, ridge, fbm;
-
+	bool worley, m_ridge, m_fbm = false;
+	bool m_overwritesColour = false;
 
 	bool colourTerrain = false;
 	struct VertexType
@@ -60,16 +62,22 @@ public:
 	float InverseLerp(float u, float v, float t);
 	float Lerp(float u, float v, float t);
 	void CalculateMaxMinNoiseHeight(float y, float* maxNoiseHeight, float* minNoiseHeight);
-	
 	void TerrainTypeTicked();
-	float* SetBottomTerrainColorImGUI();
-	std::vector<float> GetBottomTerrainColour();
-	float* SetSecondTerrainColourImGUI();
-	std::vector<float> GetSecondTerrainColour();
-	float* SetThirdTerrainColorImGUI();
-	std::vector<float> GetThirdTerrainColour();
-	float* SetTopTerrainColorImGUI();
-	std::vector<float> GetTopTerrainColour();
+
+	float* SetWaterColour();
+	std::vector<float> GetWaterColour();
+	float* SetSandColour();
+	std::vector<float> GetSandColour();
+	float* SetGrassColour();
+	std::vector<float> GetGrassColour();
+	float* SetMellowSlopeColour();
+	std::vector<float> GetMellowSlopeColour();
+	float* SetSteepSlopeColour();
+	std::vector<float> GetSteepSlopeColour();
+	float* SetSnowColour();
+	std::vector<float> GetSnowColour();
+
+
 	float* GetPersistance();
 	float* GetOctaves();
 	float* GetLacunarity();
@@ -79,8 +87,10 @@ public:
 	float GetMaxHeight();
 	bool* GetWorleyNoise();
 	bool* GetFBMNoise();
+	bool* GetInverseHeightMap();
 	bool* GetRidgeNoise();
 	bool* SetColourTerrain();
+	bool* GetOverwritesColour();
 	float GetCameraYPos();
 	float* SetTerrainHeightPosition();
 	bool GetColourTerrain();

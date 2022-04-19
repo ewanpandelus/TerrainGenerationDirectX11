@@ -18,10 +18,17 @@ cbuffer LightBuffer : register(b0)
 };
 cbuffer TerrainColourBuffer : register(b1)
 {
-	float4 bottomColour;
-	float4 secondColour;
-	float4 thirdColour;
-	float4 topColour;
+	float4 sandColour;
+	float4 grassColour;
+	float4 mellowSlopeColour;
+	float4 snowColour;
+};
+cbuffer TerrainExtraVariablesBuffer : register(b2)
+{
+	float4 overwritesColour;
+	float4 waterColour;
+	float4 steepSlopeColour;
+	float pad2;
 };
 struct InputType
 {
@@ -31,40 +38,7 @@ struct InputType
 	float3 position3D : TEXCOORD2;
 
 };
-float hash(float2 n)
-{
-	return frac(sin(dot(n, float2(123.456789, 987.654321))) * 54321.9876);
-}
 
-float noise(float2 p)
-{
-	float2 i = floor(p);
-	float2 u = smoothstep(0.0, 1.0, frac(p));
-	float a = hash(i + float2(0, 0));
-	float b = hash(i + float2(1, 0));
-	float c = hash(i + float2(0, 1));
-	float d = hash(i + float2(1, 1));
-	float r = lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
-	return r * r;
-}
-float InverseLerp(float xx, float yy, float value)
-{
-	return (value - xx) / (yy - xx);
-}
-float fbm(float2 p, int octaves)
-{
-	float value = 0.0;
-	float amplitude = 0.5;
-	float e = 3.0;
-	for (int i = 0; i < octaves; ++i)
-	{
-		value += amplitude * noise(p);
-		p = p * e;
-		amplitude *= 0.5;
-		e *= 0.9;
-	}
-	return value;
-}
 float4  RockTexBlend(float slope, float4 textureColor, float4 grassColor, float4 slopeColor, float4 rockColor) {
 	float blendAmount;
 	if (slope < 0.2)
@@ -91,27 +65,11 @@ float4 ScaleTexAllDirections(Texture2D _tex, float3 scaledWorldPos, float3 blend
 	float3 zProj = _tex.Sample(SampleType, scaledWorldPos.xy*4) * blendAxes.z;
 	return float4((xProj+yProj+zProj)/3, 1);
 }
-float4  SnowTexBlend(float slope, float4 textureColor, float4 grassColor, float4 slopeColor, float4 snowColor) {
-	float blendAmount;
-	if (slope < 0.2)
-	{
-		blendAmount = slope / 0.2f;
-		textureColor = lerp(grassColor, slopeColor, 0.01);
-	}
 
-	if ((slope < 0.7) && (slope >= 0.2f))
-	{
-		blendAmount = (slope - 0.2f) * (1.0f / (0.7f - 0.2f));
-		textureColor = lerp(snowColor, slopeColor, blendAmount);
-	}
-
-	if (slope >= 0.7)
-	{
-		textureColor = lerp(snowColor, slopeColor, 0.9);
-	}
-	return textureColor;
+float4 OverwriteColour(float4 texColour) {
+	float average = (texColour.x + texColour.y + texColour.z) / 3.0;
+	return float4(average, average, average, 1);
 }
-
 float4 TwoTextureBlendByHeight(float4 tex1, float4 tex2, float offset, float rangeTo1, float y) {
 	return lerp(tex1, tex2, saturate((y + offset)*(1/rangeTo1)));
 }
@@ -131,24 +89,41 @@ float4 main(InputType input) : SV_TARGET
  
 	float4 darkWaterColour;
 	float4 lightWaterColour;
-	float4 sandColour; 
+
 
 
 	float3 blendAxes = abs(input.normal);
 	blendAxes /= (blendAxes.x + blendAxes.y + blendAxes.z);
 
-	grassTex = grassTexture.Sample(SampleType, input.tex) *bottomColour;
-	//slopeTex = ScaleTexAllDirections(slopeTexture, input.position3D, blendAxes)*secondColour;
-	slopeTex = slopeTexture.Sample(SampleType, input.tex)  *secondColour;
-	//rockTex = ScaleTexAllDirections(rockTexture, input.position3D, blendAxes) * secondColour;
-	rockTex = rockTexture.Sample(SampleType, input.tex/2)   *secondColour;
-	snowTex = snowTexture.Sample(SampleType, input.tex) * topColour;
+	grassTex = grassTexture.Sample(SampleType, input.tex);
+	slopeTex = slopeTexture.Sample(SampleType, input.tex);
+	rockTex = rockTexture.Sample(SampleType, input.tex / 2);
+	snowTex = snowTexture.Sample(SampleType, input.tex);
 	waterTex = waterTexture.Sample(SampleType, input.tex / 5);
-	sandTex = sandTexture.Sample(SampleType, input.tex/2)* thirdColour;
+	sandTex = sandTexture.Sample(SampleType, input.tex / 2);
+
+	if (overwritesColour.x == 1) 
+	{
+		grassTex = OverwriteColour(grassTex);
+		slopeTex = OverwriteColour(slopeTex);
+		rockTex  = OverwriteColour(rockTex);
+		snowTex  = OverwriteColour(snowTex);
+		waterTex = OverwriteColour(waterTex);
+		sandTex  = OverwriteColour(sandTex);
+	}
+	grassTex *= grassColour;
+	slopeTex *= steepSlopeColour;
+	rockTex  *= mellowSlopeColour;
+	snowTex  *= snowColour;
+	waterTex *= waterColour;
+	sandTex  *= sandColour;
 
 	darkWaterColour = waterTex * float4(0.4, 0.4, 0.4, 1);
 	lightWaterColour = waterTex * float4(1.0, 1.0, 1.0, 1.0);
 	
+
+
+
 
 
 
@@ -195,7 +170,5 @@ float4 main(InputType input) : SV_TARGET
 	color = saturate(color);
 	
 
-
-	//return snowTex;
 	return  color * textureColor;
 }

@@ -71,7 +71,9 @@ private:
     void CreateWindowSizeDependentResources();
     void SetupGUI();
     void CreateNormalMapEffect(ID3D11DeviceContext* context, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalTexture);
-    XMVECTOR MousePicking(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation);
+    XMVECTOR RayCastDirectionOfMouse(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation);
+    SimpleMath::Vector3 PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleMath::Vector3 currentPosition);
+    bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2);
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 

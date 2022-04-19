@@ -11,8 +11,8 @@ Terrain::Terrain()
 	m_terrainGeneratedToggle = false;
 	noiseFunctions.Setup();
 	worley = false; 
-	ridge = false;
-	fbm = false;
+	m_ridge = false;
+	m_fbm = false;
 	
 }
 
@@ -51,11 +51,11 @@ bool Terrain::Initialize(ID3D11Device* device, int terrainWidth, int terrainHeig
 	bool result;
 
 	terrainTypes.push_back(&worley);
-	terrainTypes.push_back(&ridge);
-	terrainTypes.push_back(&fbm);
+	terrainTypes.push_back(&m_ridge);
+	terrainTypes.push_back(&m_fbm);
 	prevTerrainTypes.push_back(worley);
-	prevTerrainTypes.push_back(ridge);
-	prevTerrainTypes.push_back(fbm);
+	prevTerrainTypes.push_back(m_ridge);
+	prevTerrainTypes.push_back(m_fbm);
 	// Save the dimensions of the terrain.
 	m_terrainWidth = terrainWidth;
 	m_terrainHeight = terrainHeight;
@@ -361,7 +361,7 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 			index++;
 
 			triangle.trianglePositions[2] = DirectX::SimpleMath::Vector3(m_heightMap[index1].x, m_heightMap[index1].y, m_heightMap[index1].z);
-
+		//	triangleArray.push_back(triangle);
 
 
 			box.triangles[0] = triangle;
@@ -391,6 +391,7 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 			index++;
 
 			triangle.trianglePositions[2] = DirectX::SimpleMath::Vector3(m_heightMap[index2].x, m_heightMap[index2].y, m_heightMap[index2].z);
+		//	triangleArray.push_back(triangle);
 
 			box.triangles[1] = triangle;
 
@@ -606,58 +607,84 @@ bool Terrain::Update()
 {
 	return true;
 }
-std::vector<float> Terrain::GetBottomTerrainColour()
+std::vector<float> Terrain::GetWaterColour()
 {
 	std::vector<float> colorVals;
-	colorVals.push_back(m_bottomTerrainColour[0]);
-	colorVals.push_back(m_bottomTerrainColour[1]);
-	colorVals.push_back(m_bottomTerrainColour[2]);
+	colorVals.push_back(m_waterColour[0]);
+	colorVals.push_back(m_waterColour[1]);
+	colorVals.push_back(m_waterColour[2]);
 
 	return colorVals;
 }
-float* Terrain::SetBottomTerrainColorImGUI()
+float* Terrain::SetWaterColour()
 {
-	return &m_bottomTerrainColour[0];
+	return &m_waterColour[0];
 }
-
-std::vector<float> Terrain::GetSecondTerrainColour()
+std::vector<float> Terrain::GetSandColour()
 {
 	std::vector<float> colorVals;
-	colorVals.push_back(m_secondTerrainColour[0]);
-	colorVals.push_back(m_secondTerrainColour[1]);
-	colorVals.push_back(m_secondTerrainColour[2]);
+	colorVals.push_back(m_sandColour[0]);
+	colorVals.push_back(m_sandColour[1]);
+	colorVals.push_back(m_sandColour[2]);
 
 	return colorVals;
 }
-float* Terrain::SetSecondTerrainColourImGUI()
+float* Terrain::SetSandColour()
 {
-	return &m_secondTerrainColour[0];
+	return &m_sandColour[0];
 }
-std::vector<float> Terrain::GetThirdTerrainColour()
+
+std::vector<float> Terrain::GetGrassColour()
 {
 	std::vector<float> colorVals;
-	colorVals.push_back(m_thirdTerrainColour[0]);
-	colorVals.push_back(m_thirdTerrainColour[1]);
-	colorVals.push_back(m_thirdTerrainColour[2]);
+	colorVals.push_back(m_grassColour[0]);
+	colorVals.push_back(m_grassColour[1]);
+	colorVals.push_back(m_grassColour[2]);
 
 	return colorVals;
 }
-float* Terrain::SetThirdTerrainColorImGUI()
+float* Terrain::SetGrassColour()
 {
-	return &m_thirdTerrainColour[0];
+	return &m_grassColour[0];
 }
-std::vector<float> Terrain::GetTopTerrainColour()
+std::vector<float> Terrain::GetMellowSlopeColour()
 {
 	std::vector<float> colorVals;
-	colorVals.push_back(m_topTerrainColour[0]);
-	colorVals.push_back(m_topTerrainColour[1]);
-	colorVals.push_back(m_topTerrainColour[2]);
+	colorVals.push_back(m_mellowSlopeColour[0]);
+	colorVals.push_back(m_mellowSlopeColour[1]);
+	colorVals.push_back(m_mellowSlopeColour[2]);
 
 	return colorVals;
 }
-float* Terrain::SetTopTerrainColorImGUI()
+float* Terrain::SetMellowSlopeColour()
 {
-	return &m_topTerrainColour[0];
+	return &m_mellowSlopeColour[0];
+}
+std::vector<float> Terrain::GetSteepSlopeColour()
+{
+	std::vector<float> colorVals;
+	colorVals.push_back(m_steepSlopeColour[0]);
+	colorVals.push_back(m_steepSlopeColour[1]);
+	colorVals.push_back(m_steepSlopeColour[2]);
+
+	return colorVals;
+}
+float* Terrain::SetSteepSlopeColour()
+{
+	return &m_steepSlopeColour[0];
+}
+std::vector<float> Terrain::GetSnowColour()
+{
+	std::vector<float> colorVals;
+	colorVals.push_back(m_snowColour[0]);
+	colorVals.push_back(m_snowColour[1]);
+	colorVals.push_back(m_snowColour[2]);
+
+	return colorVals;
+}
+float* Terrain::SetSnowColour()
+{
+	return &m_snowColour[0];
 }
 
 float* Terrain::SetTerrainHeightPosition(){
@@ -675,7 +702,16 @@ float Terrain::GetMaxHeight()
 	return m_maxHeight;
 
 }
+bool* Terrain::GetInverseHeightMap()
+{
+	return &m_inverseHeightmap;
 
+}
+bool* Terrain::GetOverwritesColour()
+{
+	return &m_overwritesColour;
+
+}
 float* Terrain::GetOctaves()
 {
 	return &m_octaves;
@@ -688,13 +724,13 @@ bool* Terrain::GetWorleyNoise()
 }
 bool* Terrain::GetFBMNoise()
 {
-	return &fbm;
+	return &m_fbm;
 
 }
 
 bool* Terrain::GetRidgeNoise() {
 
-	return &ridge;
+	return &m_ridge;
 }
 bool* Terrain::SetColourTerrain()
 {

@@ -139,28 +139,31 @@ void Game::Tick()
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
-    //this is hacky,  i dont like this here.  
-    auto device = m_deviceResources->GetD3DDevice();
+
+     auto device = m_deviceResources->GetD3DDevice();
      m_elapsedTime += timer.GetElapsedSeconds();
-    XMVECTOR rayCast;
-    if (m_gameInputCommands.leftMouse) {
-        rayCast = MousePicking(SimpleMath::Vector3(0.0f, -0.6f, 0.0f),0.1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
-    }
+     Vector3 currentPosition = m_Camera01.getPosition();
+     Vector3 positionOnTerrain;
+     SimpleMath::Vector3 rayCast;
+     if (m_gameInputCommands.leftMouse) {
+        //rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 0.1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
+        // rayCast.Normalize();
+       ////  positionOnTerrain = PositionOnTerrain(rayCast, currentPosition);
+     }
 
-    if (m_gameInputCommands.p&&m_elapsedTime>1) 
-    { 
-      m_playMode = !m_playMode; 
-      m_elapsedTime = 0;
-    }
-
-
+     if (m_gameInputCommands.p && m_elapsedTime > 1)
+     {
+         m_playMode = !m_playMode;
+         m_elapsedTime = 0;
+     }
     if (m_playMode)
     {
-        float verticalDifference = 0.0001;
+        float verticalDifference = 0;
         bool moved = false;
-        //note that currently.  Delta-time is not considered in the game object movement. 
         Vector3 currentPosition = m_Camera01.getPosition();
-        Vector3 inFrontCurrentPos = m_Camera01.getPosition() + m_Camera01.getForward() * 0.01f;
+        //note that currently.  Delta-time is not considered in the game object movement. 
+      
+       Vector3 inFrontCurrentPos = m_Camera01.getPosition() + m_Camera01.getForward() * 0.01f;
         Box* box = m_Terrain.GetBoxAtPosition(inFrontCurrentPos.x * 10, inFrontCurrentPos.z * 10);
         DirectX::SimpleMath::Vector3 pos1;
         if (box) {
@@ -196,9 +199,12 @@ void Game::Update(DX::StepTimer const& timer)
             currentPosition -= (m_Camera01.getForward() * m_Camera01.getMoveSpeed());// *(1 / (1 - abs(verticalDifference))) / 3;
             moved = true;
         }
-        if (moved) {
+        if (moved)
+        {
             currentPosition.y = pos1.y;
+            
         }
+        currentPosition += rayCast * 0.1f;
         m_Camera01.setPosition(currentPosition);
 
 
@@ -207,12 +213,12 @@ void Game::Update(DX::StepTimer const& timer)
     else 
     {
         Vector3 currentPos = m_Camera01.getPosition();
-        if (currentPos != SimpleMath::Vector3(-2.5f, m_Terrain.GetCameraYPos(), 5.0f)) {
+        if (!CompareVectorsApproxEqual(currentPos, SimpleMath::Vector3(-.5f, (m_Terrain.GetCameraYPos() * 0.1f) + 4, 6.5f))) {
 
-            SimpleMath::Vector3 difference = SimpleMath::Vector3(-2.0f, (m_Terrain.GetCameraYPos()*0.1f)+4, 5.0f) - currentPos;
+            SimpleMath::Vector3 difference = SimpleMath::Vector3(-.5f, (m_Terrain.GetCameraYPos() * 0.1f) + 5, 6.5f) - currentPos;
             m_Camera01.setPosition(m_Camera01.getPosition() + difference * 0.03f);
-            // m_Camera01.setPosition(Vector3(-2.5f, 4.0f, 5.0f));
-            m_Camera01.setRotation(Vector3(90.0f, 89.5f, 0.0f));
+            m_Camera01.setRotation(Vector3(90.5f, 89.545f, 0.0f));
+        
         }
 
     }
@@ -288,7 +294,8 @@ void Game::Render()
 
     // Draw Text to the screen
     m_sprites->Begin();
-    m_font->DrawString(m_sprites.get(), L"Procedural Methods", XMFLOAT2(10, 10), Colors::Yellow);
+  //  m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::Black);
+   // m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::Black);
     m_sprites->End();
 
     //Set Rendering states. 
@@ -584,6 +591,7 @@ void Game::SetupGUI()
     ImGui::Checkbox("Use Worley Noise Heightmap", m_Terrain.GetWorleyNoise());
     ImGui::Checkbox("Use Ridge Noise Heightmap", m_Terrain.GetRidgeNoise());
     ImGui::Checkbox("Use Perlin Noise Heightmap", m_Terrain.GetFBMNoise());
+    ImGui::Checkbox("Invert Terrain", m_Terrain.GetInverseHeightMap());
     ImGui::Checkbox("Choose Terrain Colours", m_Terrain.SetColourTerrain());
 
     if (ImGui::IsMouseReleased(0)) 
@@ -591,10 +599,13 @@ void Game::SetupGUI()
         m_Terrain.TerrainTypeTicked();
     }
     if (m_Terrain.GetColourTerrain()) {
-        ImGui::ColorEdit3("Bottom Terrain Colour", m_Terrain.SetBottomTerrainColorImGUI());
-        ImGui::ColorEdit3("Slope Terrain Colour", m_Terrain.SetSecondTerrainColourImGUI());
-        ImGui::ColorEdit3("Sand Colour", m_Terrain.SetThirdTerrainColorImGUI());
-        ImGui::ColorEdit3("Snow Colour", m_Terrain.SetTopTerrainColorImGUI());
+        ImGui::Checkbox("Overwrite Terrain Texture Colours", m_Terrain.GetOverwritesColour());
+        ImGui::ColorEdit3("Water", m_Terrain.SetWaterColour());
+        ImGui::ColorEdit3("Sand", m_Terrain.SetSandColour());
+        ImGui::ColorEdit3("Grass", m_Terrain.SetGrassColour());
+        ImGui::ColorEdit3("Mellow Rock", m_Terrain.SetMellowSlopeColour());
+        ImGui::ColorEdit3("Steep Rock", m_Terrain.SetSteepSlopeColour());
+        ImGui::ColorEdit3("Snow", m_Terrain.SetSnowColour());
     }
     ImGui::End();
 
@@ -607,27 +618,45 @@ void Game::SetupGUI()
     ImGui::End();
    
 }
- XMVECTOR Game::MousePicking(SimpleMath::Vector3 terrainPos,  float terrainScale, SimpleMath::Vector3 terrainOrientation)
-{
+SimpleMath::Vector3 Game::PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleMath::Vector3 currentPosition) {
+    for each (Triangle tri in m_Terrain.GetTriangleArray())
+    {
+        Vector3 rayDest = (currentPosition)+SimpleMath::Vector3(rayCast);
+        if (m_rayTriIntersect.Intersects(currentPosition, rayDest, tri.trianglePositions[0], tri.trianglePositions[1], tri.trianglePositions[2], tri))
+        {
+            return m_rayTriIntersect.TriMidPoint(tri);
+            //return Vector3(1,1,1);
+        }
+
  
-    
-        const XMVECTOR nearSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 0.0f, 1.0f);
-        const XMVECTOR farSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 1.0f, 1.0f);
-
-        const XMVECTORF32 scale = {terrainScale,		terrainScale,		terrainScale };
-        const XMVECTORF32 translate = { terrainPos.x,		terrainPos.y,	terrainPos.z };
-        XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(terrainOrientation.y * 3.1415 / 180, terrainOrientation.x * 3.1415 / 180,
-            terrainOrientation.z * 3.1415 / 180);
-
-
-        XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
-        DirectX::SimpleMath::Vector3 nearPoint = XMVector3Unproject(nearSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
-        DirectX::SimpleMath::Vector3 farPoint = XMVector3Unproject(farSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
-
-
-        return farPoint - nearPoint;
+    }
 }
+XMVECTOR Game::RayCastDirectionOfMouse(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation)
+{
 
+
+    const XMVECTOR nearSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 0.0f, 1.0f);
+    const XMVECTOR farSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 1.0f, 1.0f);
+
+    const XMVECTORF32 scale = { terrainScale,		terrainScale,		terrainScale };
+    const XMVECTORF32 translate = { terrainPos.x,		terrainPos.y,	terrainPos.z };
+    XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(terrainOrientation.y * 3.1415 / 180, terrainOrientation.x * 3.1415 / 180,
+        terrainOrientation.z * 3.1415 / 180);
+
+
+    XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
+    XMVECTOR  nearPoint = XMVector3Unproject(nearSource, 0.0f, 0.0f, 1920, 1080, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
+    XMVECTOR  farPoint = XMVector3Unproject(farSource, 0.0f, 0.0f, 1920, 1080, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
+
+
+    return farPoint - nearPoint;
+}
+bool Game::CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2) {
+    bool equal = true;
+    equal = equal && (abs(v1.x - v2.x) < 0.02f);
+    equal = equal && (abs(v1.y - v2.y) < 0.02f);
+    return equal && (abs(v1.z - v2.z) < 0.02f);
+}
 
 void Game::OnDeviceLost()
 {

@@ -12,15 +12,18 @@ bool RayTriangleIntersection::Intersects(DirectX::SimpleMath::Vector3 rayOrigina
 	DirectX::SimpleMath::Vector3 triVertex2, Triangle triangle)
 {
 	float epslion = 0.00001f;
+	triVertex1 /= 10;
+	triVertex2 /= 10;
+	triVertex0 /= 10;
 	DirectX::SimpleMath::Vector3 e1 = triVertex1 - triVertex0;
 	DirectX::SimpleMath::Vector3 e2 = triVertex2 - triVertex0;
 	DirectX::SimpleMath::Vector3 q;
 	rayDestination.Cross(e2, q);
 	float a = e1.Dot(q);
 	if (a > -epslion && a < epslion) {
-		return false; 
+		return false;
 	}
-	
+
 	float f = 1 / a;
 	DirectX::SimpleMath::Vector3 s = rayOrigination - triVertex0;
 
@@ -54,5 +57,10 @@ Triangle RayTriangleIntersection::CheckIntersectsTriangles(Box box,
 	Triangle triangle;
 	DirectX::SimpleMath::Vector3 undefined = DirectX::SimpleMath::Vector3(INT64_MIN);
 	return triangle;
+}
+SimpleMath::Vector3 RayTriangleIntersection::TriMidPoint(Triangle tri) {
+	DirectX::SimpleMath::Vector3 mid = (tri.trianglePositions[0] + tri.trianglePositions[1] + tri.trianglePositions[2]);
+	DirectX::SimpleMath::Vector3 scaleAccounted = DirectX::SimpleMath::Vector3(mid.x, mid.y, mid.z);
+	return scaleAccounted;
 }
 
