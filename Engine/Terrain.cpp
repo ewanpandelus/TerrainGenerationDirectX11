@@ -331,7 +331,7 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 
 			}
 			counter++;
-			Box box;
+		//	Box box;
 			Triangle triangle;
 
 
@@ -361,10 +361,10 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 			index++;
 
 			triangle.trianglePositions[2] = DirectX::SimpleMath::Vector3(m_heightMap[index1].x, m_heightMap[index1].y, m_heightMap[index1].z);
-		//	triangleArray.push_back(triangle);
+			triangleArray.push_back(triangle);
 
 
-			box.triangles[0] = triangle;
+			//box.triangles[0] = triangle;
 			// Bottom left.
 			vertices[index].position = DirectX::SimpleMath::Vector3(m_heightMap[index1].x, m_heightMap[index1].y, m_heightMap[index1].z);
 			vertices[index].normal = DirectX::SimpleMath::Vector3(m_heightMap[index1].nx, m_heightMap[index1].ny, m_heightMap[index1].nz);
@@ -391,11 +391,11 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 			index++;
 
 			triangle.trianglePositions[2] = DirectX::SimpleMath::Vector3(m_heightMap[index2].x, m_heightMap[index2].y, m_heightMap[index2].z);
-		//	triangleArray.push_back(triangle);
+			triangleArray.push_back(triangle);
 
-			box.triangles[1] = triangle;
+			//box.triangles[1] = triangle;
 
-			SetBoxBounds(box);
+			//SetBoxBounds(box);
 
 		}
 
@@ -450,7 +450,32 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 
 	return true;
 }
+bool Terrain::ManipulateTerrain(int x, int z, ID3D11Device* device) {
+	bool result;
+	if (x == 0 || x == m_terrainWidth || z == m_terrainHeight || z == 0) return false;
+	int index = (m_terrainHeight * z) + x;
+	m_heightMap[index*2].y +=1;
+	m_heightMap[(index * 2)+1].y += 1;
+	m_heightMap[(index * 2) + 1+m_terrainHeight].y += 1;
+	m_heightMap[(index * 2) + m_terrainHeight].y += 1;
+	m_heightMap[(index * 2) - m_terrainHeight].y += 1;
+	m_heightMap[(index * 2) - 1 + m_terrainHeight].y += 1;
+	m_heightMap[(index * 2)-1].y += 1;
+	m_heightMap[(index * 2) - 1 - m_terrainHeight].y += 1;
+	m_heightMap[(index * 2) + 1 - m_terrainHeight].y += 1;
 
+	result = CalculateNormals();
+	if (!result)
+	{
+		return false;
+	}
+
+	result = InitializeBuffers(device);
+	if (!result)
+	{
+		return false;
+	}
+}
 void Terrain::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {
 	unsigned int stride;
@@ -712,7 +737,7 @@ bool* Terrain::GetOverwritesColour()
 	return &m_overwritesColour;
 
 }
-float* Terrain::GetOctaves()
+int* Terrain::GetOctaves()
 {
 	return &m_octaves;
 

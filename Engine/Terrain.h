@@ -30,7 +30,8 @@ private:
 	float m_snowColour[3] = { 1,1,1 };
 	float m_terrainOffset = 0;
 
-	float m_frequency, m_amplitude, m_lacunarity, m_persistance, m_octaves, m_offset;
+	float m_frequency, m_amplitude, m_lacunarity, m_persistance, m_offset;
+	int m_octaves = 0;
 	bool worley, m_ridge, m_fbm = false;
 	bool m_overwritesColour = false;
 
@@ -63,6 +64,9 @@ public:
 	float Lerp(float u, float v, float t);
 	void CalculateMaxMinNoiseHeight(float y, float* maxNoiseHeight, float* minNoiseHeight);
 	void TerrainTypeTicked();
+	bool ManipulateTerrain(int x, int z, ID3D11Device* device);
+
+
 
 	float* SetWaterColour();
 	std::vector<float> GetWaterColour();
@@ -79,7 +83,7 @@ public:
 
 
 	float* GetPersistance();
-	float* GetOctaves();
+	int* GetOctaves();
 	float* GetLacunarity();
 	float* GetOffset();
 	float* GetFrequency();

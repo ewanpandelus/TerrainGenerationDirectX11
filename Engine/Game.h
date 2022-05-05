@@ -70,10 +70,10 @@ private:
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
     void SetupGUI();
-    void CreateNormalMapEffect(ID3D11DeviceContext* context, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalTexture);
     XMVECTOR RayCastDirectionOfMouse(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation);
     SimpleMath::Vector3 PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleMath::Vector3 currentPosition);
-    bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2);
+    bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2, float threshold);
+    bool HandleInput();
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -155,7 +155,7 @@ private:
     PostProcessEffects                                                      m_postProcessProperties;
     Collision                                                               m_Collision;
     
-    
+    bool                                                                    m_lerpedToPlayMode = true;
     float                                                                   m_CameraSmoothMovement = 0.03;
     int                                                                     m_screenWidth;
     int                                                                     m_screenHeight;
@@ -163,4 +163,6 @@ private:
     bool                                                                    m_playMode = true;
     float                                                                   xChange;
     float                                                                   yChange;
+    SimpleMath::Vector3                                                     m_planeTransform;
+    SimpleMath::Vector3                                                     m_planeRotation;
 };

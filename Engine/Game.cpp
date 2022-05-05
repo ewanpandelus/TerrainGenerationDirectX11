@@ -146,9 +146,10 @@ void Game::Update(DX::StepTimer const& timer)
      Vector3 positionOnTerrain;
      SimpleMath::Vector3 rayCast;
      if (m_gameInputCommands.leftMouse) {
-        //rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 0.1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
-        // rayCast.Normalize();
-       ////  positionOnTerrain = PositionOnTerrain(rayCast, currentPosition);
+        rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
+        rayCast.Normalize();
+        positionOnTerrain = PositionOnTerrain(rayCast, currentPosition);
+        m_Terrain.ManipulateTerrain(positionOnTerrain.x, positionOnTerrain.z, device);
      }
 
      if (m_gameInputCommands.p && m_elapsedTime > 1)
@@ -158,68 +159,44 @@ void Game::Update(DX::StepTimer const& timer)
      }
     if (m_playMode)
     {
+        if (!m_lerpedToPlayMode) {
+            if (!CompareVectorsApproxEqual(currentPosition, SimpleMath::Vector3(5.0f, (m_Terrain.GetCameraYPos() * 0.1f), 5.0f), 0.1f)) {
+
+                SimpleMath::Vector3 difference = SimpleMath::Vector3(5.0f, (m_Terrain.GetCameraYPos() * 0.1f), 5.0f) - currentPosition;
+                SimpleMath::Vector3 differenceInRotation = Vector3(90.0f, 89.5f, 0.0f) - m_Camera01.getRotation();
+                m_Camera01.setPosition(m_Camera01.getPosition() + difference * 0.03f);
+                m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
+
+            }
+            else
+            {
+                m_lerpedToPlayMode = true;
+            }
+        }
         float verticalDifference = 0;
         bool moved = false;
-        Vector3 currentPosition = m_Camera01.getPosition();
+    
         //note that currently.  Delta-time is not considered in the game object movement. 
       
        Vector3 inFrontCurrentPos = m_Camera01.getPosition() + m_Camera01.getForward() * 0.01f;
         Box* box = m_Terrain.GetBoxAtPosition(inFrontCurrentPos.x * 10, inFrontCurrentPos.z * 10);
         DirectX::SimpleMath::Vector3 pos1;
-        if (box) {
-            pos1 = m_CameraMovement.UpdateCameraMovement(m_Camera01, m_rayTriIntersect, box);
-            verticalDifference = currentPosition.y - pos1.y;
-            pos1.y = currentPosition.y - (verticalDifference * m_CameraSmoothMovement);
-        }
-
-
-
-        if (m_gameInputCommands.left)
-        {
-            Vector3 rotation = m_Camera01.getRotation();
-            rotation.y = rotation.y += m_Camera01.getRotationSpeed();
-            m_Camera01.setRotation(rotation);
-        }
-        if (m_gameInputCommands.right)
-        {
-            Vector3 rotation = m_Camera01.getRotation();
-            rotation.y = rotation.y -= m_Camera01.getRotationSpeed();
-            m_Camera01.setRotation(rotation);
-        }
-        if (m_gameInputCommands.forward)
-        {
-            currentPosition = m_Camera01.getPosition(); //get the position
-            currentPosition += (m_Camera01.getForward() * m_Camera01.getMoveSpeed());//*(1 / (1 - abs(verticalDifference))) / 3;
-            moved = true;
-
-        }
-        if (m_gameInputCommands.back)
-        {
-            currentPosition = m_Camera01.getPosition(); //get the position
-            currentPosition -= (m_Camera01.getForward() * m_Camera01.getMoveSpeed());// *(1 / (1 - abs(verticalDifference))) / 3;
-            moved = true;
-        }
-        if (moved)
-        {
-            currentPosition.y = pos1.y;
-            
-        }
-        currentPosition += rayCast * 0.1f;
-        m_Camera01.setPosition(currentPosition);
-
-
-      
+     
+        HandleInput();
     }
     else 
     {
         Vector3 currentPos = m_Camera01.getPosition();
-        if (!CompareVectorsApproxEqual(currentPos, SimpleMath::Vector3(-.5f, (m_Terrain.GetCameraYPos() * 0.1f) + 4, 6.5f))) {
+        if (!CompareVectorsApproxEqual(currentPos, SimpleMath::Vector3(-.5f*5, (m_Terrain.GetCameraYPos() * 0.1f*5) + 5*5, 6.5f*5), 0.02f)) {
 
-            SimpleMath::Vector3 difference = SimpleMath::Vector3(-.5f, (m_Terrain.GetCameraYPos() * 0.1f) + 5, 6.5f) - currentPos;
-            m_Camera01.setPosition(m_Camera01.getPosition() + difference * 0.03f);
-            m_Camera01.setRotation(Vector3(90.5f, 89.545f, 0.0f));
-        
+            SimpleMath::Vector3 differenceInPosition = SimpleMath::Vector3(-.5f*5, (m_Terrain.GetCameraYPos() * 0.1f*5) + 5*5, 6.5f*5) - currentPos;
+            SimpleMath::Vector3 differenceInRotation = Vector3(90.5f, 89.545f, 0.0f) - m_Camera01.getRotation();
+            m_Camera01.setPosition(m_Camera01.getPosition() + differenceInPosition * 0.03f);
+            m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
+            m_lerpedToPlayMode = false;
+
         }
+     
 
     }
     if (m_gameInputCommands.generate)
@@ -301,23 +278,32 @@ void Game::Render()
     //Set Rendering states. 
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-    context->RSSetState(m_states->CullClockwise());
-    //context->RSSetState(m_states->Wireframe());
+    context->RSSetState(m_states->CullNone());
     RenderTexturePass1();
 
    
     m_world = SimpleMath::Matrix::Identity; //set world back to identity
-    SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, -0.6f, 0.0f);
+    SimpleMath::Matrix planePosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
+  //  SimpleMath::Matrix planeRotationX = SimpleMath::Matrix::CreateLookAt(m_Camera01.getPosition(), m_planeTransform, m_Camera01.getForward().Up);
+   
 
 
 
 
-    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
-    m_world = m_world * newScale * newPosition3;
+    m_OceanShader.EnableShader(context);
+    m_world = m_world *planePosition;
+    m_OceanShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+ 		//scale the terrain down a little. 
+
+    m_BasicModel2.Render(context);
     m_BasicShaderPair.EnableShader(context);
     //m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get());
     m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, flatRock.Get());
-    // m_BasicModel3.Render(context);
+
+    m_world = SimpleMath::Matrix::Identity; //set world back to identity
+    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.5);
+    SimpleMath::Matrix terrainPosition = SimpleMath::Matrix::CreateTranslation(0.0,-0.6,0.0);
+    m_world = m_world * newScale * terrainPosition;
         //setup and draw cube
     m_BasicShaderPair.EnableShader(context);
     //m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get());
@@ -375,7 +361,7 @@ void Game::RenderTexturePass1()
     //Set Rendering states. 
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-    context->RSSetState(m_states->CullClockwise());
+    context->RSSetState(m_states->CullNone());
     //context->RSSetState(m_states->Wireframe());
 
     //prepare transform for floor object. 
@@ -396,7 +382,7 @@ void Game::RenderTexturePass1()
     //m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get());
     m_BasicShaderPair.SetShaderParametersTerrain(context, &m_world, &m_view, &m_projection, &m_Light, m_grassTex.Get(), m_groundTex.Get(),
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain);
-    m_Terrain.Render(context);
+    //m_Terrain.Render(context);
     m_OceanShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
     m_OceanShader.EnableShader(context);
     //m_Ocean.Render(context);
@@ -513,7 +499,7 @@ void Game::CreateDeviceDependentResources()
     m_Ocean.Initialize(device, 144, 144);
     //setup our test model
     m_BasicModel.InitializeSphere(device);
-    m_BasicModel2.InitializeModel(device, "drone.obj");
+    m_BasicModel2.InitializeModel(device, "plane.obj");
     m_BasicModel3.InitializeBox(device, 10.0f, 0.1f, 10.0f);	//box includes dimensions
 
     //load and set up our Vertex and Pixel Shaders
@@ -531,27 +517,8 @@ void Game::CreateDeviceDependentResources()
 
     //Initialise 
     m_FirstRenderPass = new RenderTexture(device, 1920, 1000, 1, 2);
-    
-    
-    
-    
-    
-    
-
-  
-
 }
-void Game::CreateNormalMapEffect(ID3D11DeviceContext* context, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalTexture) {
-    auto time = static_cast<float>(m_timer.GetTotalSeconds());
-    SimpleMath::Matrix zRotation = Matrix::CreateRotationX(time);
-    m_normalMapEffect->SetWorld(zRotation * SimpleMath::Matrix::CreateTranslation(5.0f, 0.5f, 2.0f));
 
-    m_normalMapEffect->SetView(m_view);
-    m_normalMapEffect->SetProjection(m_projection);
-    m_normalMapEffect->SetNormalTexture(normalTexture.Get());
-    m_normalMapEffect->SetAlpha(0.5f);
-    m_normalMapEffect->SetAmbientLightColor(Colors::Crimson);
-}
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
@@ -582,12 +549,12 @@ void Game::SetupGUI()
     ImGui::NewFrame();
 
     ImGui::Begin("Terrain Parameters");
-    ImGui::SliderFloat("Amplitude", m_Terrain.GetAmplitude(), 1.0f, 10.0f);
+    ImGui::SliderFloat("Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
     ImGui::SliderFloat("Frequency", m_Terrain.GetFrequency(), 0.0f, 2.0f);
     ImGui::SliderFloat("Lacunarity", m_Terrain.GetLacunarity(), 0.0f, 1.0f);
     ImGui::SliderFloat("Persistance", m_Terrain.GetPersistance(), 0.0f, 2.5f);
-    ImGui::SliderFloat("Octaves", m_Terrain.GetOctaves(), 1.0f, 10.0f);
-    ImGui::SliderFloat("Terrain Y Position", m_Terrain.SetTerrainHeightPosition(), -2.0f, 10.0f);
+    ImGui::SliderInt("Octaves", m_Terrain.GetOctaves(), 1.0f, 10.0f);
+    ImGui::SliderFloat("Terrain Y Position", m_Terrain.SetTerrainHeightPosition(), -10.0f, 10.0f);
     ImGui::Checkbox("Use Worley Noise Heightmap", m_Terrain.GetWorleyNoise());
     ImGui::Checkbox("Use Ridge Noise Heightmap", m_Terrain.GetRidgeNoise());
     ImGui::Checkbox("Use Perlin Noise Heightmap", m_Terrain.GetFBMNoise());
@@ -618,46 +585,69 @@ void Game::SetupGUI()
     ImGui::End();
    
 }
+bool Game::HandleInput() {
+    Vector3 currentPosition = m_Camera01.getPosition();
+    if (m_gameInputCommands.left)
+    {
+        Vector3 rotation = m_Camera01.getRotation();
+        rotation.y = rotation.y += m_Camera01.getRotationSpeed();
+        m_Camera01.setRotation(rotation);
+    }
+    if (m_gameInputCommands.right)
+    {
+        Vector3 rotation = m_Camera01.getRotation();
+        rotation.y = rotation.y -= m_Camera01.getRotationSpeed();
+        m_Camera01.setRotation(rotation);
+    }
+    if (m_gameInputCommands.forward)
+    {
+        currentPosition = m_Camera01.getPosition(); //get the position
+        currentPosition += (m_Camera01.getForward() * m_Camera01.getMoveSpeed());//*(1 / (1 - abs(verticalDifference))) / 3;
+    }
+    if (m_gameInputCommands.back)
+    {
+        currentPosition = m_Camera01.getPosition(); //get the position
+        currentPosition -= (m_Camera01.getForward() * m_Camera01.getMoveSpeed());// *(1 / (1 - abs(verticalDifference))) / 3;
+    }
+    m_planeRotation = m_Camera01.getRotation();
+  //  m_planeTransform = currentPosition +( m_Camera01.getForward() * 2);
+    m_Camera01.setPosition(currentPosition);
+    return true;
+}
 SimpleMath::Vector3 Game::PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleMath::Vector3 currentPosition) {
     for each (Triangle tri in m_Terrain.GetTriangleArray())
     {
-        Vector3 rayDest = (currentPosition)+SimpleMath::Vector3(rayCast);
-        if (m_rayTriIntersect.Intersects(currentPosition, rayDest, tri.trianglePositions[0], tri.trianglePositions[1], tri.trianglePositions[2], tri))
+        Vector3 rayDest = (currentPosition)+SimpleMath::Vector3(rayCast)*1000;
+        if (m_rayTriIntersect.Intersects2(currentPosition, rayDest, tri.trianglePositions[0], tri.trianglePositions[1], tri.trianglePositions[2], 1))
         {
-            return m_rayTriIntersect.TriMidPoint(tri);
-            //return Vector3(1,1,1);
+           // m_planeTransform = 
+            return tri.trianglePositions[0];
+          
         }
-
+    
  
     }
+    return Vector3(-10, -10, -10);
 }
 XMVECTOR Game::RayCastDirectionOfMouse(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation)
 {
-
-
     const XMVECTOR nearSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 0.0f, 1.0f);
     const XMVECTOR farSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 1.0f, 1.0f);
-
     const XMVECTORF32 scale = { terrainScale,		terrainScale,		terrainScale };
     const XMVECTORF32 translate = { terrainPos.x,		terrainPos.y,	terrainPos.z };
     XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(terrainOrientation.y * 3.1415 / 180, terrainOrientation.x * 3.1415 / 180,
         terrainOrientation.z * 3.1415 / 180);
-
-
     XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
     XMVECTOR  nearPoint = XMVector3Unproject(nearSource, 0.0f, 0.0f, 1920, 1080, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
     XMVECTOR  farPoint = XMVector3Unproject(farSource, 0.0f, 0.0f, 1920, 1080, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
-
-
     return farPoint - nearPoint;
 }
-bool Game::CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2) {
+bool Game::CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2, float threshold) {
     bool equal = true;
-    equal = equal && (abs(v1.x - v2.x) < 0.02f);
-    equal = equal && (abs(v1.y - v2.y) < 0.02f);
-    return equal && (abs(v1.z - v2.z) < 0.02f);
+    equal = equal && (abs(v1.x - v2.x) < threshold);
+    equal = equal && (abs(v1.y - v2.y) < threshold);
+    return equal && (abs(v1.z - v2.z) < threshold);
 }
-
 void Game::OnDeviceLost()
 {
     m_states.reset();
@@ -675,3 +665,8 @@ void Game::OnDeviceRestored()
     CreateWindowSizeDependentResources();
 }
 #pragma endregion
+/* if (box) {
+          pos1 = m_CameraMovement.UpdateCameraMovement(m_Camera01, m_rayTriIntersect, box);
+          verticalDifference = currentPosition.y - pos1.y;
+          pos1.y = currentPosition.y - (verticalDifference * m_CameraSmoothMovement);
+      }*/

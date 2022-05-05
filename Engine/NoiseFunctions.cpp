@@ -84,7 +84,7 @@ float NoiseFunctions::Distance(SimpleMath::Vector2 a, SimpleMath::Vector2 b) {
 }
 
 float NoiseFunctions::RidgeNoise(float x, float y, float scale , float freq) {
-    return (1 - abs(perlinNoise.Noise(x / scale * freq, y / scale* freq, 1)) - 0.5);
+    return (1 - abs(perlinNoise.Noise(0.05f+ x / scale * freq, 0.05f+ y / scale* freq, 1)) - 0.5);
 }
 float NoiseFunctions::PerlinNoise(float x, float y, float scale, float freq) {
     return perlinNoise.Noise(x / scale * freq, y / 10 * freq, 1);

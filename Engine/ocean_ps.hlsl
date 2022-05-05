@@ -136,6 +136,9 @@ struct InputType
 
 float4 main(InputType input) : SV_TARGET
 {
+    float3	lightDir;
+    float	lightIntensity;
+    
 	float4	textureColor;
     textureColor = shaderTexture.Sample(SampleType, input.tex);
 
@@ -144,7 +147,16 @@ float4 main(InputType input) : SV_TARGET
     float3 color = float3(0, 0, 0);
 
      color += lerp(float4(1,0,0,0), float4(1.0,0.9,0,0), ridgedMF(st * 3.0 + input.time/20));
-     return float4(color, 1);
+     lightDir = normalize(input.position3D - lightPosition);
+
+     // Calculate the amount of light on this pixel.
+     lightIntensity = saturate(dot(input.normal, -lightDir));
+
+     // Determine the final amount of diffuse color based on the diffuse color combined with the light intensity.
+     color = ambientColor + (diffuseColor * lightIntensity); //adding ambient
+     color = saturate(color);
+
+     return float4(color, 1)*float4(0.1,0.1,0.1,1);
 
 	// Sample the pixel color from the texture using the sampler at this texture coordinate location.
 

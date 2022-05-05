@@ -19,6 +19,9 @@ public:
 		DirectX::SimpleMath::Vector3 rayOrigination,
 		DirectX::SimpleMath::Vector3 rayDestination);
 	SimpleMath::Vector3 TriMidPoint(Triangle tri);
+	bool Intersects2(DirectX::SimpleMath::Vector3 orig, DirectX::SimpleMath::Vector3  dir,
+		DirectX::SimpleMath::Vector3  v0, DirectX::SimpleMath::Vector3 v1, DirectX::SimpleMath::Vector3 v2,
+		float t);
 private:
 
 };
