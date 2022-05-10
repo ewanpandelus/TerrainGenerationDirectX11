@@ -80,7 +80,7 @@ void Game::Initialize(HWND window, int width, int height)
     //setup camera
     m_Camera01.setPosition(Vector3(0.0, 0.0f, 5.0f));
     m_Camera01.setRotation(Vector3(90.0f, 89.5f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
-    m_planeTransform = SimpleMath::Vector3(25, 5, 25);
+
 
 #ifdef DXTK_AUDIO
     // Create DirectXTK for Audio objects
@@ -159,7 +159,7 @@ void Game::Update(DX::StepTimer const& timer)
 
     if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) && (m_editTerrain || m_placeTrees)) {
 
-        SimpleMath::Vector3    rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 0.5, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
+        SimpleMath::Vector3    rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
         rayCast.Normalize();
         Vector3    positionOnTerrain = PositionOnTerrain(rayCast, currentPosition);
         if (m_editTerrain)
@@ -181,9 +181,9 @@ void Game::Update(DX::StepTimer const& timer)
     if (m_playMode)
     {
         if (!m_lerpedToPlayMode) {
-            if (!CompareVectorsApproxEqual(currentPosition, SimpleMath::Vector3(5.0f, (m_Terrain.GetCameraYPos() * 0.1f), 5.0f), 0.1f)) {
+            if (!CompareVectorsApproxEqual(currentPosition, SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() +5 ), 50), 0.1f)) {
 
-                SimpleMath::Vector3 difference = SimpleMath::Vector3(5.0f, (m_Terrain.GetCameraYPos() * 0.1f), 5.0f) - currentPosition;
+                SimpleMath::Vector3 difference = SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() +5), 50) - currentPosition;
                 SimpleMath::Vector3 differenceInRotation = Vector3(90.0f, 89.5f, 0.0f) - m_Camera01.getRotation();
                 m_Camera01.setPosition(m_Camera01.getPosition() + difference * 0.03f);
                 m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
@@ -205,9 +205,9 @@ void Game::Update(DX::StepTimer const& timer)
     else
     {
         Vector3 currentPos = m_Camera01.getPosition();
-        if (!CompareVectorsApproxEqual(currentPos, SimpleMath::Vector3(-.5f * 5, (m_Terrain.GetCameraYPos() * 0.1f * 5) + 5 * 5, 6.5f * 5), 0.05f)) {
+        if (!CompareVectorsApproxEqual(currentPos, SimpleMath::Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10), 0.05f)) {
 
-            SimpleMath::Vector3 differenceInPosition = SimpleMath::Vector3(-.5f * 5, (m_Terrain.GetCameraYPos() * 0.1f * 5) + 5 * 5, 6.5f * 5) - currentPos;
+            SimpleMath::Vector3 differenceInPosition = SimpleMath::Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10) - currentPos;
             SimpleMath::Vector3 differenceInRotation = Vector3(90.5f, 89.545f, 0.0f) - m_Camera01.getRotation();
             m_Camera01.setPosition(m_Camera01.getPosition() + differenceInPosition * 0.03f);
             m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
@@ -223,6 +223,7 @@ void Game::Update(DX::StepTimer const& timer)
         {
             m_Terrain.GenerateHeightMapLerped(device);
             m_terrainLerpVal = 0;
+       
         }
         else
         {
@@ -230,6 +231,7 @@ void Game::Update(DX::StepTimer const& timer)
 
         }
         m_PositionsOnTerrain = m_Terrain.randomPointsOnTerrain();
+
     }
 
 
@@ -310,29 +312,58 @@ void Game::Render()
 
 
 
-    SimpleMath::Matrix currentTreePosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
+    SimpleMath::Matrix currentTreePosition = SimpleMath::Matrix::CreateTranslation(0,0,0);
+    SimpleMath::Matrix treeScale = SimpleMath::Matrix::CreateScale(1);
+
+    m_TreeShader.EnableShader(context);
+    for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
+        m_world = SimpleMath::Matrix::Identity; //set world back to identity
+        currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_PositionsOnTerrain[i] + Vector3(0, 0.23, 0));
+       // treeScale = SimpleMath::Matrix::CreateScale(1 );
+        m_world = m_world * currentTreePosition;
+        m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+        m_TreeModel.Render(context);
+    }
+ 
+    
+   
+
+
+
+
+    SimpleMath::Matrix scale = SimpleMath::Matrix::CreateScale(0.5);
+    SimpleMath::Matrix planeOffset = SimpleMath::Matrix::CreateTranslation(20,0,20);
     SimpleMath::Matrix currentPlanePosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
-    //SimpleMath::Matrix planeRotation = SimpleMath::Matrix::CreateFromYawPitchRoll(m_planeRotation.y, m_planeRotation.x, m_planeRotation.z);
     SimpleMath::Matrix planeRotation = SimpleMath::Matrix::CreateFromYawPitchRoll(m_Camera01.getRotation().y, m_Camera01.getRotation().x - 90, m_Camera01.getRotation().z);
 
 
-    SimpleMath::Matrix planeScale = SimpleMath::Matrix::CreateScale(1.5);
 
 
 
 
-    m_planeShader.EnableShader(context);
 
-    m_world = m_world * planeScale * planeRotation * currentPlanePosition;
-    m_planeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-    m_BasicModel2.Render(context);
+    m_PlaneShader.EnableShader(context);
+
+    m_world =  scale * planeRotation * currentPlanePosition;
+    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+    m_PlaneModel.Render(context);
+
+    m_world = SimpleMath::Matrix::Identity; 
+    currentPlanePosition = SimpleMath::Matrix::CreateTranslation(10,1, 10);
+    
+    SimpleMath::Matrix planeRotationY = SimpleMath::Matrix::CreateRotationY(m_timer.GetTotalSeconds()/3);
+    SimpleMath::Matrix planeLocalRotationY = SimpleMath::Matrix::CreateRotationY((m_timer.GetTotalSeconds() / 1.5)-90);
+    m_world = m_world * scale  *planeRotationY* currentPlanePosition * planeLocalRotationY*planeOffset;
+    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+    m_CoinModel.Render(context);
+
 
     m_BasicShaderPair.EnableShader(context);
 
     m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, flatRock.Get());
 
     m_world = SimpleMath::Matrix::Identity; //set world back to identity
-    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.5);
+    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(1);
     SimpleMath::Matrix terrainPosition = SimpleMath::Matrix::CreateTranslation(0.0, -0.6, 0.0);
     m_world = m_world * newScale * terrainPosition;
     //setup and draw cube
@@ -342,8 +373,8 @@ void Game::Render()
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain);
 
     m_Terrain.Render(context);
-    m_planeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-    m_planeShader.EnableShader(context);
+    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+    m_PlaneShader.EnableShader(context);
     // m_Ocean.Render(context);
      //render our GUI
 
@@ -386,7 +417,6 @@ void Game::RenderTexturePass1()
 
     SimpleMath::Matrix currentTreePosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
     SimpleMath::Matrix currentPlanePosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
-    //SimpleMath::Matrix planeRotation = SimpleMath::Matrix::CreateFromYawPitchRoll(m_planeRotation.y, m_planeRotation.x, m_planeRotation.z);
     SimpleMath::Matrix planeRotation = SimpleMath::Matrix::CreateFromYawPitchRoll(m_Camera01.getRotation().y, m_Camera01.getRotation().x - 90, m_Camera01.getRotation().z);
 
 
@@ -395,24 +425,17 @@ void Game::RenderTexturePass1()
 
 
 
-    m_planeShader.EnableShader(context);
-    /*
-      for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
-          m_world = SimpleMath::Matrix::Identity; //set world back to identity
-          currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_PositionsOnTerrain[i] +  SimpleMath::Vector3(0,-0.6,0));
-          m_world = m_world * currentTreePosition;
-          m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-          m_BasicModel2.Render(context);
-      }*/
+    m_PlaneShader.EnableShader(context);
+
     m_world = m_world * planeScale * planeRotation * currentPlanePosition;
-    m_planeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-    m_BasicModel2.Render(context);
+    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+    m_PlaneModel.Render(context);
 
     m_BasicShaderPair.EnableShader(context);
     m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, flatRock.Get());
 
     m_world = SimpleMath::Matrix::Identity; //set world back to identity
-    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.5);
+    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(1);
     SimpleMath::Matrix terrainPosition = SimpleMath::Matrix::CreateTranslation(0.0, -0.6, 0.0);
     m_world = m_world * newScale * terrainPosition;
 
@@ -421,8 +444,8 @@ void Game::RenderTexturePass1()
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain);
 
     m_Terrain.Render(context);
-    m_planeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-    m_planeShader.EnableShader(context);
+    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+    m_PlaneShader.EnableShader(context);
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
@@ -534,12 +557,16 @@ void Game::CreateDeviceDependentResources()
     m_Terrain.Initialize(device, 128, 128);
     //setup our test model
     m_BasicModel.InitializeSphere(device);
-    m_BasicModel2.InitializeModel(device, "plane.obj");
+    m_PlaneModel.InitializeModel(device, "plane.obj");
+    m_CoinModel.InitializeModel(device, "coin.obj");
+    m_TreeModel.InitializeModel(device, "tree.obj");
+
     m_BasicModel3.InitializeBox(device, 10.0f, 0.1f, 10.0f);	//box includes dimensions
 
     //load and set up our Vertex and Pixel Shaders
     m_BasicShaderPair.InitStandard(device, L"light_vs.cso", L"light_ps.cso");
-    m_planeShader.InitStandard(device, L"tree_vs.cso", L"tree_ps.cso");
+    m_PlaneShader.InitStandard(device, L"plane_vs.cso", L"plane_ps.cso");
+    m_TreeShader.InitStandard(device, L"tree_vs.cso", L"tree_ps.cso");
 
     //load Textures
 
@@ -573,7 +600,7 @@ void Game::CreateWindowSizeDependentResources()
         fovAngleY,
         aspectRatio,
         0.01f,
-        100.0f
+        160.0f
     );
 }
 
@@ -583,7 +610,7 @@ void Game::SetupGUI()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Terrain Parameters");
+    ImGui::Begin("Procedural Terrain Parameters");
     ImGui::SliderFloat("Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
     ImGui::SliderFloat("Frequency", m_Terrain.GetFrequency(), 0.0f, 2.0f);
     ImGui::SliderFloat("Lacunarity", m_Terrain.GetLacunarity(), 0.0f, 1.0f);
@@ -591,7 +618,7 @@ void Game::SetupGUI()
     ImGui::SliderInt("Octaves", m_Terrain.GetOctaves(), 1.0f, 10.0f);
     ImGui::SliderFloat("Terrain Y Position", m_Terrain.SetTerrainHeightPosition(), -10.0f, 10.0f);
     ImGui::InputInt("Seed", m_Terrain.SetSeed(), 0, 10000);
-    ImGui::Checkbox("Smooth Transition", &m_smoothTerrainTransition);
+
     ImGui::Checkbox("Use Worley Noise Heightmap", m_Terrain.GetWorleyNoise());
     ImGui::Checkbox("Use Ridge Noise Heightmap", m_Terrain.GetRidgeNoise());
     ImGui::Checkbox("Use Perlin Noise Heightmap", m_Terrain.GetFBMNoise());
@@ -602,16 +629,27 @@ void Game::SetupGUI()
     else {
         *m_Terrain.GetTerraced() = false;
     }
-
-    ImGui::Checkbox("Modify Terrain with Mouse", &m_editTerrain);
-    ImGui::Checkbox("Place Trees", &m_placeTrees);
     ImGui::Checkbox("Invert Terrain", m_Terrain.GetInverseHeightMap());
-    ImGui::Checkbox("Choose Terrain Colours", m_Terrain.SetColourTerrain());
+    ImGui::Checkbox("Smooth Transition", &m_smoothTerrainTransition);
+
 
     if (ImGui::IsMouseReleased(0))
     {
         m_Terrain.TerrainTypeTicked();
     }
+
+    ImGui::End();
+
+    ImGui::Begin("Post Process Parameters");
+    ImGui::Checkbox("PostProcessOn", m_postProcessProperties.SetPostProcessImGUI());
+    ImGui::SliderFloat("Bloom Brightness", m_postProcessProperties.SetBloomBrightness(), 0.1f, 3.0f);
+    ImGui::SliderFloat("Bloom Blur Strength", m_postProcessProperties.SetBloomBlurRadius(), 0.1f, 3.0f);
+    ImGui::End();
+
+    ImGui::Begin("Manually Modify Terrain");
+    ImGui::Checkbox("Modify Terrain with Mouse", &m_editTerrain);
+    ImGui::Checkbox("Place Trees", &m_placeTrees);
+    ImGui::Checkbox("Choose Terrain Colours", m_Terrain.SetColourTerrain());
     if (m_Terrain.GetColourTerrain()) {
         ImGui::Checkbox("Overwrite Terrain Texture Colours", m_Terrain.GetOverwritesColour());
         ImGui::ColorEdit3("Water", m_Terrain.SetWaterColour());
@@ -622,15 +660,6 @@ void Game::SetupGUI()
         ImGui::ColorEdit3("Snow", m_Terrain.SetSnowColour());
     }
     ImGui::End();
-
-    ImGui::Begin("Post Process Parameters");
-    ImGui::Checkbox("PostProcessOn", m_postProcessProperties.SetPostProcessImGUI());
-    ImGui::SliderFloat("Bloom Brightness", m_postProcessProperties.SetBloomBrightness(), 0.1f, 3.0f);
-    ImGui::SliderFloat("Bloom Blur Strength", m_postProcessProperties.SetBloomBlurRadius(), 0.1f, 3.0f);
-
-
-    ImGui::End();
-
 }
 bool Game::HandlePlaneInput() {
 
@@ -640,7 +669,6 @@ bool Game::HandlePlaneInput() {
     {
 
         rotation.z = rotation.z -= m_Camera01.getRotationSpeed() / 2;
-        m_Camera01.setRotation(rotation);
     }
     if (m_gameInputCommands.right && rotation.z < 1)
     {
@@ -648,14 +676,14 @@ bool Game::HandlePlaneInput() {
     }
     if (m_gameInputCommands.forward && rotation.x < 91)
     {
-        rotation.x = rotation.x += m_Camera01.getRotationSpeed() / 2;
+        rotation.x = rotation.x += m_Camera01.getRotationSpeed() / 3;
 
     }
     if (m_gameInputCommands.back && rotation.x > 89)
     {
-        rotation.x = rotation.x -= m_Camera01.getRotationSpeed() / 2;
+        rotation.x = rotation.x -= m_Camera01.getRotationSpeed() / 3;
     }
-    rotation.y = rotation.y -= rotation.z * (m_Camera01.getRotationSpeed() / 2);
+    rotation.y = rotation.y -= rotation.z * (m_Camera01.getRotationSpeed() / 2.7);
     m_Camera01.setRotation(rotation);
     m_Camera01.setPosition(currentPosition);
     return true;
@@ -665,7 +693,7 @@ SimpleMath::Vector3 Game::PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleM
     for each (Triangle tri in m_Terrain.GetTriangleArray())
     {
         Vector3 rayDest = (currentPosition)+SimpleMath::Vector3(rayCast) * 1000;
-        if (m_rayTriIntersect.Intersects2(currentPosition, rayDest, tri.trianglePositions[0], tri.trianglePositions[1], tri.trianglePositions[2], 1))
+        if (m_rayTriIntersect.Intersects(currentPosition, rayDest, tri.trianglePositions[0], tri.trianglePositions[1], tri.trianglePositions[2], 1))
         {
             return tri.trianglePositions[2];
 
@@ -711,11 +739,3 @@ void Game::OnDeviceRestored()
     CreateWindowSizeDependentResources();
 }
 #pragma endregion
-/*
-  for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
-      m_world = SimpleMath::Matrix::Identity; //set world back to identity
-      currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_PositionsOnTerrain[i] +  SimpleMath::Vector3(0,-0.6,0));
-      m_world = m_world * currentTreePosition;
-      m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-      m_BasicModel2.Render(context);
-  }*/

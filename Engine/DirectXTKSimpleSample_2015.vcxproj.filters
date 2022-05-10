@@ -77,9 +77,10 @@
     <ClInclude Include="PostProcessEffects.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="TreeShader.h">
+    <ClInclude Include="PlaneShader.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="TreeShader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -134,9 +135,10 @@
     <ClCompile Include="PostProcessEffects.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="TreeShader.cpp">
+    <ClCompile Include="PlaneShader.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="TreeShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -177,6 +179,12 @@
       <Filter>Assets</Filter>
     </FxCompile>
     <FxCompile Include="light_vs.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="plane_ps.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="plane_vs.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
     <FxCompile Include="tree_ps.hlsl">

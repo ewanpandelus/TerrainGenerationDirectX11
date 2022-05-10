@@ -16,6 +16,7 @@
 #include "CameraMovement.h"
 #include "Collision.h"
 #include "MouseRay.h"
+#include "PlaneShader.h"
 #include "TreeShader.h"
 #include "PostProcess.h"
 #include "PostProcessEffects.h"
@@ -73,7 +74,6 @@ private:
     SimpleMath::Vector3 PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleMath::Vector3 currentPosition);
     bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2, float threshold);
     bool HandlePlaneInput();
-    void HandleInputPlane();
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -114,11 +114,14 @@ private:
 
     //Shaders
     Shader																	m_BasicShaderPair;
-    TreeShader																m_planeShader;
+    PlaneShader																m_PlaneShader;
+    TreeShader																m_TreeShader;
     //Scene. 
     Terrain																	m_Terrain;
     ModelClass																m_BasicModel;
-    ModelClass																m_BasicModel2;
+    ModelClass																m_PlaneModel;
+    ModelClass																m_CoinModel;
+    ModelClass																m_TreeModel;
     ModelClass																m_BasicModel3;
 
     //RenderTextures
@@ -165,8 +168,6 @@ private:
     bool                                                                    m_editTerrain = false;
     bool                                                                    m_placeTrees = false;
     bool                                                                    m_smoothTerrainTransition = false;
-    float                                                                   xChange;
-    float                                                                   yChange;
     SimpleMath::Vector3                                                     m_treePosition;
     SimpleMath::Vector3                                                     m_planeRotation;
     SimpleMath::Vector3                                                     m_planeTransform;

@@ -64,10 +64,7 @@ OutputType main(InputType input)
 
     input.position.w = 1.0f;
 
-    // Calculate the position of the vertex against the world, view, and projection matrices.
     output.position = mul(input.position, worldMatrix);
-    output.position = mul(output.position, viewMatrix);
-    output.position = mul(output.position, projectionMatrix);
 
     // Store the texture coordinates for the pixel shader.
     output.tex = input.tex;
@@ -75,12 +72,25 @@ OutputType main(InputType input)
     // Calculate the normal vector against the world matrix only.
     output.normal = mul(input.normal, (float3x3)worldMatrix);
 
+   
+
+    //output.position.y += fbm(cos(time*input.tex),4);
+ 
+
+    // Calculate the position of the vertex against the world, view, and projection matrices.
+    output.position = mul(output.position, viewMatrix);
+    output.position = mul(output.position, projectionMatrix);
+
     // Normalize the normal vector.
     output.normal = normalize(output.normal);
 
+    //Calculalte light position 
+    float4 worldPos = mul(input.position, worldMatrix);
+
+
+  
     // world position of vertex (for point light)
     output.position3D = (float3)mul(input.position, worldMatrix);
-
 
     return output;
 }

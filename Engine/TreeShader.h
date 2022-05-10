@@ -1,5 +1,8 @@
 #pragma once
 
+
+#pragma once
+
 #include "DeviceResources.h"
 #include "Light.h"
 

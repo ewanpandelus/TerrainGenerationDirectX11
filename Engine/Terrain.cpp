@@ -124,10 +124,13 @@ void Terrain::Render(ID3D11DeviceContext* deviceContext)
 }
 std::vector<SimpleMath::Vector3> Terrain::randomPointsOnTerrain() {
 	std::vector<SimpleMath::Vector3> randPoints;
-	for (int i = 0; i < 8;i++)
+	for (int i = 0; i < 200;i++)
 	{
 		int index = rand() % ((m_terrainHeight - 1) * (m_terrainWidth - 1));
-		randPoints.push_back(SimpleMath::Vector3(m_heightMap[index].x * 0.5f, m_heightMap[index].y * 0.5f, m_heightMap[index].z * 0.5f));
+		if (m_heightMap[index].y > 0.1 &&1-m_heightMap[index].ny<0.1) {
+			randPoints.push_back(SimpleMath::Vector3(m_heightMap[index].x, m_heightMap[index].y, m_heightMap[index].z));
+		}
+
 	}
 	return randPoints;
 }
@@ -464,8 +467,7 @@ void Terrain::ManipulateTerrain(int x, int z, ID3D11Device* device, int up) {
 	bool result;
 
 	if (x <= 0 || x == m_terrainWidth || z == m_terrainHeight || z <= 0) return;
-	int index = ((m_terrainHeight * z) + x) * 2;
-	if (index > 20000) return;
+	int index = ((m_terrainHeight * z) + x);
 	m_heightMap[index].y += 1 * up;
 	m_heightMap[(index)+1].y += 1 * up;
 	m_heightMap[(index)+1 + m_terrainHeight].y += 1 * up;

@@ -71,7 +71,7 @@ OutputType main(InputType input)
     // Calculate the normal vector against the world matrix only.
     output.normal = mul(input.normal, (float3x3)worldMatrix);
 
-  
+
     float amp = 2;
     float waveLength = 10;
 
