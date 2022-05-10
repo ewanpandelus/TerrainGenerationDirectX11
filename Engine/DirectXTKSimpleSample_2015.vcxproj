@@ -184,7 +184,6 @@
     <ClInclude Include="Light.h" />
     <ClInclude Include="modelclass.h" />
     <ClInclude Include="MouseRay.h" />
-    <ClInclude Include="Ocean.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="PostProcessEffects.h" />
@@ -194,7 +193,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="Terrain.h" />
-    <ClInclude Include="WaterShader.h" />
+    <ClInclude Include="TreeShader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
@@ -214,7 +213,6 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="modelclass.cpp" />
     <ClCompile Include="MouseRay.cpp" />
-    <ClCompile Include="Ocean.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -227,7 +225,7 @@
     <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Terrain.cpp" />
-    <ClCompile Include="WaterShader.cpp" />
+    <ClCompile Include="TreeShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -259,13 +257,13 @@
     <FxCompile Include="light_vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="ocean_ps.hlsl">
+    <FxCompile Include="tree_ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="ocean_vs.hlsl">
+    <FxCompile Include="tree_vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>

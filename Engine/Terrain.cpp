@@ -10,10 +10,12 @@ Terrain::Terrain()
 {
 	m_terrainGeneratedToggle = false;
 	noiseFunctions.Setup();
-	worley = false; 
+	worley = false;
 	m_ridge = false;
 	m_fbm = false;
-	
+	m_terraced = false;
+	perlinNoise.Initialize();
+
 }
 
 
@@ -39,7 +41,7 @@ void Terrain::TerrainTypeTicked() {
 		}
 	}
 	prevTerrainTypes[index] = true;
-	
+
 }
 
 bool Terrain::Initialize(ID3D11Device* device, int terrainWidth, int terrainHeight)
@@ -120,7 +122,15 @@ void Terrain::Render(ID3D11DeviceContext* deviceContext)
 
 	return;
 }
-
+std::vector<SimpleMath::Vector3> Terrain::randomPointsOnTerrain() {
+	std::vector<SimpleMath::Vector3> randPoints;
+	for (int i = 0; i < 8;i++)
+	{
+		int index = rand() % ((m_terrainHeight - 1) * (m_terrainWidth - 1));
+		randPoints.push_back(SimpleMath::Vector3(m_heightMap[index].x * 0.5f, m_heightMap[index].y * 0.5f, m_heightMap[index].z * 0.5f));
+	}
+	return randPoints;
+}
 bool Terrain::CalculateNormals()
 {
 	int i, j, index1, index2, index3, index, count;
@@ -331,7 +341,7 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 
 			}
 			counter++;
-		//	Box box;
+			//	Box box;
 			Triangle triangle;
 
 
@@ -450,31 +460,24 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 
 	return true;
 }
-bool Terrain::ManipulateTerrain(int x, int z, ID3D11Device* device) {
+void Terrain::ManipulateTerrain(int x, int z, ID3D11Device* device, int up) {
 	bool result;
-	if (x == 0 || x == m_terrainWidth || z == m_terrainHeight || z == 0) return false;
-	int index = (m_terrainHeight * z) + x;
-	m_heightMap[index*2].y +=1;
-	m_heightMap[(index * 2)+1].y += 1;
-	m_heightMap[(index * 2) + 1+m_terrainHeight].y += 1;
-	m_heightMap[(index * 2) + m_terrainHeight].y += 1;
-	m_heightMap[(index * 2) - m_terrainHeight].y += 1;
-	m_heightMap[(index * 2) - 1 + m_terrainHeight].y += 1;
-	m_heightMap[(index * 2)-1].y += 1;
-	m_heightMap[(index * 2) - 1 - m_terrainHeight].y += 1;
-	m_heightMap[(index * 2) + 1 - m_terrainHeight].y += 1;
 
-	result = CalculateNormals();
-	if (!result)
-	{
-		return false;
-	}
+	if (x <= 0 || x == m_terrainWidth || z == m_terrainHeight || z <= 0) return;
+	int index = ((m_terrainHeight * z) + x) * 2;
+	if (index > 20000) return;
+	m_heightMap[index].y += 1 * up;
+	m_heightMap[(index)+1].y += 1 * up;
+	m_heightMap[(index)+1 + m_terrainHeight].y += 1 * up;
+	m_heightMap[(index)+m_terrainHeight].y += 1 * up;
+	m_heightMap[(index)-m_terrainHeight].y += 1 * up;
+	m_heightMap[(index)-1 + m_terrainHeight].y += 1 * up;
+	m_heightMap[(index)-1].y += 1 * up;
+	m_heightMap[(index)-1 - m_terrainHeight].y += 1 * up;
+	m_heightMap[(index)+1 - m_terrainHeight].y += 1 * up;
+	CalculateNormals();
+	InitializeBuffers(device);
 
-	result = InitializeBuffers(device);
-	if (!result)
-	{
-		return false;
-	}
 }
 void Terrain::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {
@@ -497,14 +500,14 @@ void Terrain::RenderBuffers(ID3D11DeviceContext* deviceContext)
 	return;
 }
 void Terrain::CalculateMaxMinNoiseHeight(float y, float* minNoiseHeight, float* maxNoiseHeight) {
-	if (y > *maxNoiseHeight) {
+	if (y > * maxNoiseHeight) {
 		*maxNoiseHeight = y;
 	}
 	else if (y < *minNoiseHeight) {
 		*minNoiseHeight = y;
 	}
 }
-int Terrain:: FindActiveNoiseFunction() {
+int Terrain::FindActiveNoiseFunction() {
 	int index = -1;
 	for (int i = 0; i < prevTerrainTypes.size();i++) {
 		if (prevTerrainTypes[i] == true)
@@ -512,20 +515,42 @@ int Terrain:: FindActiveNoiseFunction() {
 			return i;
 		}
 	}
+	return -1;
 }
-float Terrain::GenerateValueWithActiveNoiseFunction(int i, int j, int terrainType, bool terraced) {
-	
-	
+float Terrain::GenerateValueWithActiveNoiseFunction(int i, int j, int terrainType) {
+
+	if (m_terraced) terrainType = 3;
 	switch (terrainType) {
 	case 1:
-		return noiseFunctions.RidgeNoise(i,j, m_scale, m_frequency);
+		return noiseFunctions.RidgeNoise(i, j, m_scale, m_frequency);
 		break;
 	case 2:
-		return noiseFunctions.PerlinNoise(i, j, m_scale, m_frequency);//perlinNoise.Noise(i / m_scale * m_frequency, j / m_scale * m_frequency, 1);
+		return noiseFunctions.PerlinNoise(i, j, m_scale, m_frequency);
+	case 3:
+		return Redistribution(i, j, m_terraceVal);
+		break;
+
 	default:
 		return 0;
 		break;
 	}
+}
+void Terrain::LerpTerrainHeight(ID3D11Device* device, float t) {
+	int index;
+	for (int j = 0; j < m_terrainHeight; j++)
+	{
+		for (int i = 0; i < m_terrainWidth; i++)
+		{
+			index = (m_terrainHeight * j) + i;
+			m_heightMap[index].y = Lerp(m_heightMap[index].prevY, m_heightMap[index].newY, t);
+			if (t >= 0.99) {
+				m_heightMap[index].prevY = m_heightMap[index].newY;
+			}
+		}
+	}
+
+	CalculateNormals();
+	InitializeBuffers(device);
 }
 bool Terrain::GenerateHeightMap(ID3D11Device* device)
 {
@@ -546,7 +571,7 @@ bool Terrain::GenerateHeightMap(ID3D11Device* device)
 	float maxNoiseHeight = -1000;
 	float minNoiseHeight = 1000;
 
-	noiseFunctions.PopulateRandomPoints(m_terrainWidth, m_terrainHeight, 32,1);
+	noiseFunctions.PopulateRandomPoints(m_terrainWidth, m_terrainHeight, 32, 1);
 	for (int j = 0; j < m_terrainHeight; j++)
 	{
 		for (int i = 0; i < m_terrainWidth; i++)
@@ -557,26 +582,26 @@ bool Terrain::GenerateHeightMap(ID3D11Device* device)
 			float noiseHeight = 0;
 			if (terrainType == 0)
 			{
-				m_heightMap[index].y = (noiseFunctions.VoronoiTesselation(i * m_frequency, j * m_frequency)*m_amplitude) + m_terrainOffset;
+				m_heightMap[index].y = (noiseFunctions.VoronoiTesselation(i + m_seed * m_frequency, j * m_frequency) * m_amplitude) + m_terrainOffset;
 				CalculateMaxMinNoiseHeight(m_heightMap[index].y, &minNoiseHeight, &maxNoiseHeight);
 				continue;
 			}
 
-		
+
 			m_amplitude = initialAmp;
 			m_frequency = initialFrequency;
-			for(int octave = 0; octave < m_octaves; octave++) { 
-  				float perlinValue =  GenerateValueWithActiveNoiseFunction(i, j, terrainType, 10);
-				noiseHeight += perlinValue*m_amplitude;
-				m_amplitude*= m_persistance;
-				m_frequency*= m_lacunarity;
+			for (int octave = 0; octave < m_octaves; octave++) {
+				float perlinValue = GenerateValueWithActiveNoiseFunction(i + m_seed, j + m_seed, terrainType);
+				noiseHeight += perlinValue * m_amplitude;
+				m_amplitude *= m_persistance;
+				m_frequency *= m_lacunarity;
 			}
 
 			CalculateMaxMinNoiseHeight(noiseHeight, &minNoiseHeight, &maxNoiseHeight);
-			m_heightMap[index].y = noiseHeight+(!m_inverseHeightmap*m_terrainOffset);
-			
+			m_heightMap[index].y = noiseHeight + (!m_inverseHeightmap * m_terrainOffset);
+
 		}
-	
+
 	}
 	for (int j = 0; j < m_terrainHeight; j++)
 	{
@@ -588,7 +613,7 @@ bool Terrain::GenerateHeightMap(ID3D11Device* device)
 			if (m_inverseHeightmap) {
 				m_heightMap[index].y = inverted + m_terrainOffset;
 			}
-			if ((m_inverseHeightmap &&inverseLerp > (1 - (m_flattenPercentage/100)) || (!m_inverseHeightmap && inverseLerp< (m_flattenPercentage / 100)))) {
+			if ((m_inverseHeightmap && inverseLerp > (1 - (m_flattenPercentage / 100)) || (!m_inverseHeightmap && inverseLerp < (m_flattenPercentage / 100)))) {
 				m_heightMap[index].y = Lerp(minNoiseHeight, maxNoiseHeight, 0.1);
 			}
 		}
@@ -614,13 +639,13 @@ float Terrain::InverseLerp(float u, float v, float value)
 }
 float Terrain::Lerp(float u, float v, float t)
 {
-	return u+(t*(v-u));
+	return u + (t * (v - u));
 }
 
-float Terrain::Redistribution(float x, float y, float exponent, float *noiseFunc(float, float)) {
-	float e0 = 1 * *noiseFunc(1 * x, 1 * y);
-	float e1 = 0.5 * *noiseFunc(2 * x, 2 * y) * e0;
-	float e2 = 0.25 * *noiseFunc(4 * x, 4 * y) * (e0 + e1);
+float Terrain::Redistribution(float x, float y, float exponent) {
+	float e0 = 1 * perlinNoise.Noise(1 * x * m_scale * m_frequency, 1 * y * m_scale * m_frequency, 1);
+	float e1 = 0.5 * perlinNoise.Noise(2 * x * m_scale * m_frequency, 2 * y * m_scale * m_frequency, 1) * e0;
+	float e2 = 0.25 * perlinNoise.Noise(4 * x * m_scale * m_frequency, 4 * y * m_scale * m_frequency, 1) * (e0 + e1);
 	float e = (e0 + e1 + e2) / (1 + 0.5 + 0.25);
 	return round(e * exponent) / exponent;
 }
@@ -712,7 +737,7 @@ float* Terrain::SetSnowColour()
 	return &m_snowColour[0];
 }
 
-float* Terrain::SetTerrainHeightPosition(){
+float* Terrain::SetTerrainHeightPosition() {
 
 	return &m_terrainOffset;
 }
@@ -735,6 +760,11 @@ bool* Terrain::GetInverseHeightMap()
 bool* Terrain::GetOverwritesColour()
 {
 	return &m_overwritesColour;
+
+}
+bool* Terrain::GetTerraced()
+{
+	return &m_terraced;
 
 }
 int* Terrain::GetOctaves()
@@ -781,11 +811,19 @@ float* Terrain::GetPersistance()
 	return &m_persistance;
 }
 
-
 float* Terrain::GetAmplitude()
 {
 	return &m_amplitude;
 }
+int* Terrain::SetSeed()
+{
+	return &m_seed;
+}
+int* Terrain::SetTerraceVal()
+{
+	return &m_terraceVal;
+}
+
 float* Terrain::GetFrequency()
 {
 	return &m_frequency;
@@ -835,4 +873,85 @@ Box* Terrain::GetBoxAtPosition(float x, float z) {
 	}
 	return NULL;
 
+}
+bool Terrain::GenerateHeightMapLerped(ID3D11Device* device)
+{
+	bool result;
+
+	float initialAmp = m_amplitude;
+	float initialFrequency = m_frequency;
+	int index;
+	float scale = 10;
+	int terrainType = FindActiveNoiseFunction();
+	if (terrainType == -1) return false;
+
+	//we want a wavelength of 1 to be a single wave over the whole terrain.  A single wave is 2 pi which is about 6.283
+
+	//loop through the terrain and set the hieghts how we want. This is where we generate the terrain
+	//in this case I will run a sin-wave through the terrain in one axis.
+
+	float maxNoiseHeight = -1000;
+	float minNoiseHeight = 1000;
+
+	noiseFunctions.PopulateRandomPoints(m_terrainWidth, m_terrainHeight, 32, 1);
+	for (int j = 0; j < m_terrainHeight; j++)
+	{
+		for (int i = 0; i < m_terrainWidth; i++)
+		{
+			index = (m_terrainHeight * j) + i;
+			m_heightMap[index].x = (float)i;
+			m_heightMap[index].z = (float)j;
+			float noiseHeight = 0;
+			if (terrainType == 0)
+			{
+				m_heightMap[index].newY = (noiseFunctions.VoronoiTesselation(i + m_seed * m_frequency, j * m_frequency) * m_amplitude) + m_terrainOffset;
+				CalculateMaxMinNoiseHeight(m_heightMap[index].newY, &minNoiseHeight, &maxNoiseHeight);
+				continue;
+			}
+
+
+			m_amplitude = initialAmp;
+			m_frequency = initialFrequency;
+			for (int octave = 0; octave < m_octaves; octave++) {
+				float perlinValue = GenerateValueWithActiveNoiseFunction(i + m_seed, j + m_seed, terrainType);
+				noiseHeight += perlinValue * m_amplitude;
+				m_amplitude *= m_persistance;
+				m_frequency *= m_lacunarity;
+			}
+
+			CalculateMaxMinNoiseHeight(noiseHeight, &minNoiseHeight, &maxNoiseHeight);
+			m_heightMap[index].newY = noiseHeight + (!m_inverseHeightmap * m_terrainOffset);
+
+		}
+
+	}
+	for (int j = 0; j < m_terrainHeight; j++)
+	{
+		for (int i = 0; i < m_terrainWidth; i++)
+		{
+			index = (m_terrainHeight * j) + i;
+			float inverseLerp = InverseLerp(minNoiseHeight, maxNoiseHeight, m_heightMap[index].newY);
+			float inverted = Lerp(minNoiseHeight, maxNoiseHeight, 1 - inverseLerp);
+			if (m_inverseHeightmap) {
+				m_heightMap[index].newY = inverted + m_terrainOffset;
+			}
+			if ((m_inverseHeightmap && inverseLerp > (1 - (m_flattenPercentage / 100)) || (!m_inverseHeightmap && inverseLerp < (m_flattenPercentage / 100)))) {
+				m_heightMap[index].newY = Lerp(minNoiseHeight, maxNoiseHeight, 0.1);
+			}
+		}
+	}
+	m_cameraYPos = ((maxNoiseHeight + m_terrainOffset));
+	m_amplitude = initialAmp;
+	m_frequency = initialFrequency;
+	result = CalculateNormals();
+	if (!result)
+	{
+		return false;
+	}
+
+	result = InitializeBuffers(device);
+	if (!result)
+	{
+		return false;
+	}
 }

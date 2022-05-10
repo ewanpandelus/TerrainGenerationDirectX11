@@ -150,14 +150,14 @@ float4 main(InputType input) : SV_TARGET
 	if (input.position3D.y >= -0.4 && input.position3D.y <= -0.35) {
 		textureColor = lerp(lightWaterColour, sandTex, (input.position3D.y + 0.4) * 20);
 	}
-	if (input.position3D.y < -0.1&& input.position3D.y >-0.35) {
-		textureColor = lerp(sandTex, grassSlope, (input.position3D.y + 0.35)*4);
+	if (input.position3D.y < 1&& input.position3D.y >-0.35) {
+		textureColor = lerp(sandTex, grassSlope, (input.position3D.y + 0.35)*1/1.35);
 		
 	}
-	if (input.position3D.y <=0.5 && input.position3D.y >= -0.1) {
-		textureColor = lerp(grassSlope, snowSlope, (input.position3D.y + 0.1) * 1.67);
+	if (input.position3D.y <=2.5 && input.position3D.y >= 1) {
+		textureColor = lerp(grassSlope, snowSlope, (input.position3D.y - 1)/1.5);
 	}
-	if (input.position3D.y > 0.5) {
+	if (input.position3D.y > 2.5) {
 		textureColor = snowSlope;
 	}
 	lightDir = normalize(input.position3D - lightPosition);

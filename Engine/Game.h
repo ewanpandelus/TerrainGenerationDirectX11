@@ -16,8 +16,7 @@
 #include "CameraMovement.h"
 #include "Collision.h"
 #include "MouseRay.h"
-#include "Ocean.h"
-#include "WaterShader.h"
+#include "TreeShader.h"
 #include "PostProcess.h"
 #include "PostProcessEffects.h"
 
@@ -73,7 +72,8 @@ private:
     XMVECTOR RayCastDirectionOfMouse(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation);
     SimpleMath::Vector3 PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleMath::Vector3 currentPosition);
     bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2, float threshold);
-    bool HandleInput();
+    bool HandlePlaneInput();
+    void HandleInputPlane();
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -114,10 +114,9 @@ private:
 
     //Shaders
     Shader																	m_BasicShaderPair;
-    WaterShader																	m_OceanShader;
+    TreeShader																m_planeShader;
     //Scene. 
     Terrain																	m_Terrain;
-    Ocean																	m_Ocean;
     ModelClass																m_BasicModel;
     ModelClass																m_BasicModel2;
     ModelClass																m_BasicModel3;
@@ -155,14 +154,23 @@ private:
     PostProcessEffects                                                      m_postProcessProperties;
     Collision                                                               m_Collision;
     
+
+    float                                                                   m_terrainLerpVal = 2;
     bool                                                                    m_lerpedToPlayMode = true;
     float                                                                   m_CameraSmoothMovement = 0.03;
     int                                                                     m_screenWidth;
     int                                                                     m_screenHeight;
     float                                                                   m_elapsedTime = 0;
     bool                                                                    m_playMode = true;
+    bool                                                                    m_editTerrain = false;
+    bool                                                                    m_placeTrees = false;
+    bool                                                                    m_smoothTerrainTransition = false;
     float                                                                   xChange;
     float                                                                   yChange;
-    SimpleMath::Vector3                                                     m_planeTransform;
+    SimpleMath::Vector3                                                     m_treePosition;
     SimpleMath::Vector3                                                     m_planeRotation;
+    SimpleMath::Vector3                                                     m_planeTransform;
+    std::vector<SimpleMath::Vector3>                                        m_PositionsOnTerrain;
+
+
 };

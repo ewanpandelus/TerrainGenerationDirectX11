@@ -73,12 +73,11 @@
     <ClInclude Include="CameraMovement.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="MouseRay.h" />
-    <ClInclude Include="Ocean.h" />
-    <ClInclude Include="WaterShader.h">
-      <Filter>Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="NoiseFunctions.h" />
     <ClInclude Include="PostProcessEffects.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeShader.h">
       <Filter>Rendering</Filter>
     </ClInclude>
   </ItemGroup>
@@ -131,12 +130,11 @@
     <ClCompile Include="CameraMovement.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="MouseRay.cpp" />
-    <ClCompile Include="Ocean.cpp" />
-    <ClCompile Include="WaterShader.cpp">
-      <Filter>Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="NoiseFunctions.cpp" />
     <ClCompile Include="PostProcessEffects.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeShader.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
   </ItemGroup>
@@ -181,10 +179,10 @@
     <FxCompile Include="light_vs.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
-    <FxCompile Include="ocean_ps.hlsl">
+    <FxCompile Include="tree_ps.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
-    <FxCompile Include="ocean_vs.hlsl">
+    <FxCompile Include="tree_vs.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
   </ItemGroup>

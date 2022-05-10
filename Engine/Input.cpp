@@ -67,6 +67,9 @@ void Input::Update()
 
 	if (mouse.leftButton) m_GameInput.leftMouse = true;
 	else m_GameInput.leftMouse = false;
+
+	if (mouse.rightButton) m_GameInput.rightMouse = true;
+	else m_GameInput.rightMouse = false;
 	
 	if (kb.P) m_GameInput.p = true;
 	else m_GameInput.p = false;
