@@ -75,6 +75,12 @@ private:
     SimpleMath::Vector3 PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleMath::Vector3 currentPosition);
     bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2, float threshold);
     bool HandlePlaneInput();
+    void RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos);
+    void PopulatePlacedObjectArrays();
+    bool LerpPositionAndRotation(SimpleMath::Vector3 currentPosition, SimpleMath::Vector3 expectedPosition, SimpleMath::Vector3 expectedRotation);
+    void RenderPlacedObjects(ID3D11DeviceContext* context);
+    void RenderCollectables(ID3D11DeviceContext* context);
+
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -174,6 +180,8 @@ private:
     SimpleMath::Vector3                                                     m_planeRotation;
     SimpleMath::Vector3                                                     m_planeTransform;
     std::vector<SimpleMath::Vector3>                                        m_PositionsOnTerrain;
+    std::vector<SimpleMath::Vector3>                                        m_coinPositions;
+
 
 
 };

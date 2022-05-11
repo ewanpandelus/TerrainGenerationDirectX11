@@ -147,30 +147,15 @@ void Game::Update(DX::StepTimer const& timer)
         m_Terrain.LerpTerrainHeight(device, m_terrainLerpVal);
         m_terrainLerpVal += (0.06f * (1 - m_terrainLerpVal)) + 0.02f;
     }
-
     Vector3 currentPosition = m_Camera01.getPosition();
     Vector3 inFront = m_Camera01.getForward();
+
+    RayCasting(device, currentPosition);
+
     if (m_lerpedToPlayMode)
     {
         m_planeTransform =  m_Camera01.getPosition() + inFront * 3;
         m_Camera01.setPosition(currentPosition + inFront * 0.1f);
-    }
-
-
-    if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) && (m_editTerrain || m_placeTrees)) {
-
-        SimpleMath::Vector3 rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
-        rayCast.Normalize();
-        Vector3    positionOnTerrain = PositionOnTerrain(rayCast, currentPosition);
-        if (m_editTerrain)
-        {
-            int editTerrainDirection = m_gameInputCommands.leftMouse ? 1 : -1;
-            if (positionOnTerrain.x != -10) m_Terrain.ManipulateTerrain(positionOnTerrain.x, positionOnTerrain.z, device, editTerrainDirection);
-        }
-        if (m_placeTrees) {
-            m_placedObjects.AddToObjectPositions(positionOnTerrain+ Vector3(0,0.23,0));
-        }
-
     }
 
     if (m_gameInputCommands.p && m_elapsedTime > 1)
@@ -181,41 +166,18 @@ void Game::Update(DX::StepTimer const& timer)
     if (m_playMode)
     {
         if (!m_lerpedToPlayMode) {
-            if (!CompareVectorsApproxEqual(currentPosition, SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() +5 ), 50), 0.1f)) {
-
-                SimpleMath::Vector3 difference = SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() +5), 50) - currentPosition;
-                SimpleMath::Vector3 differenceInRotation = Vector3(90.0f, 89.5f, 0.0f) - m_Camera01.getRotation();
-                m_Camera01.setPosition(m_Camera01.getPosition() + difference * 0.03f);
-                m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
-            }
-            else
+          
+            if(LerpPositionAndRotation(currentPosition, SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() + 5), 50), Vector3(90.0f, 89.5f, 0.0f)))
             {
-
                 m_lerpedToPlayMode = true;
             }
         }
-
         HandlePlaneInput();
-
-
-
-
-
     }
     else
     {
-        Vector3 currentPos = m_Camera01.getPosition();
-        if (!CompareVectorsApproxEqual(currentPos, SimpleMath::Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10), 0.05f)) {
-
-            SimpleMath::Vector3 differenceInPosition = SimpleMath::Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10) - currentPos;
-            SimpleMath::Vector3 differenceInRotation = Vector3(90.5f, 89.545f, 0.0f) - m_Camera01.getRotation();
-            m_Camera01.setPosition(m_Camera01.getPosition() + differenceInPosition * 0.03f);
-            m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
-            m_lerpedToPlayMode = false;
-
-        }
-
-
+        m_lerpedToPlayMode = (LerpPositionAndRotation(currentPosition, SimpleMath::Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10), Vector3(90.5f, 89.545f, 0.0f)));
+       
     }
     if (m_gameInputCommands.generate)
     {
@@ -223,16 +185,13 @@ void Game::Update(DX::StepTimer const& timer)
         {
             m_Terrain.GenerateHeightMapLerped(device);
             m_terrainLerpVal = 0;
-       
         }
         else
         {
             m_Terrain.GenerateHeightMap(device);
 
         }
-        m_placedObjects.ClearObjectPositions();
-        m_PositionsOnTerrain = m_Terrain.randomPointsOnTerrain();
-
+        PopulatePlacedObjectArrays(); 
     }
 
 
@@ -311,84 +270,32 @@ void Game::Render()
     context->RSSetState(m_states->CullNone());
     RenderTexturePass1();
 
-    std::vector<SimpleMath::Vector3> placedObjects = m_placedObjects.GetObjectPositions();
 
-    SimpleMath::Matrix currentTreePosition = SimpleMath::Matrix::CreateTranslation(0,0,0);
-    SimpleMath::Matrix treeScale = SimpleMath::Matrix::CreateScale(4);
-    currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_placedObjectPosition);
     m_TreeShader.EnableShader(context);
-    /*for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
-        m_world = SimpleMath::Matrix::Identity; //set world back to identity
-        currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_PositionsOnTerrain[i] + Vector3(0, 0.23, 0));
-       // treeScale = SimpleMath::Matrix::CreateScale(1 );
-        m_world = m_world * currentTreePosition;
-        m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-        m_TreeModel.Render(context);
-    }*/
-    for (int i = 0;i < placedObjects.size();i++) {
-      m_world = SimpleMath::Matrix::Identity; //set world back to identity
-      currentTreePosition = SimpleMath::Matrix::CreateTranslation(placedObjects[i]);
-      treeScale = SimpleMath::Matrix::CreateScale(1 );
-      m_world = m_world * currentTreePosition;
-      m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-      m_TreeModel.Render(context);
-  }
-   
-    
+    RenderPlacedObjects(context);
+    RenderCollectables(context);
    
 
 
 
-
+    m_world = SimpleMath::Matrix::Identity;
     SimpleMath::Matrix scale = SimpleMath::Matrix::CreateScale(0.5);
-    SimpleMath::Matrix planeOffset = SimpleMath::Matrix::CreateTranslation(20,0,20);
-    SimpleMath::Matrix currentPlanePosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
+    SimpleMath::Matrix currentObjectPosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
     SimpleMath::Matrix planeRotation = SimpleMath::Matrix::CreateFromYawPitchRoll(m_Camera01.getRotation().y, m_Camera01.getRotation().x - 90, m_Camera01.getRotation().z);
-
-
-
-
-
-
-
     m_PlaneShader.EnableShader(context);
-
-    m_world =  scale * planeRotation * currentPlanePosition;
+    m_world =  scale * planeRotation * currentObjectPosition;
     m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
     m_PlaneModel.Render(context);
 
-    m_world = SimpleMath::Matrix::Identity; 
-    currentPlanePosition = SimpleMath::Matrix::CreateTranslation(10,1, 10);
+   
     
-    SimpleMath::Matrix planeRotationY = SimpleMath::Matrix::CreateRotationY(m_timer.GetTotalSeconds()/3);
-    SimpleMath::Matrix planeLocalRotationY = SimpleMath::Matrix::CreateRotationY((m_timer.GetTotalSeconds() / 1.5)-90);
-    m_world = m_world * scale  *planeRotationY* currentPlanePosition * planeLocalRotationY*planeOffset;
-    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-    m_CoinModel.Render(context);
-
-
+    m_world = SimpleMath::Matrix::Identity; 
     m_BasicShaderPair.EnableShader(context);
-
-    m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, flatRock.Get());
-
-    m_world = SimpleMath::Matrix::Identity; //set world back to identity
-    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(1);
     SimpleMath::Matrix terrainPosition = SimpleMath::Matrix::CreateTranslation(0.0, -0.6, 0.0);
-    m_world = m_world * newScale * terrainPosition;
-    //setup and draw cube
-    m_BasicShaderPair.EnableShader(context);
-
+    m_world = m_world * terrainPosition;
     m_BasicShaderPair.SetShaderParametersTerrain(context, &m_world, &m_view, &m_projection, &m_Light, m_grassTex.Get(), m_groundTex.Get(),
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain);
-
     m_Terrain.Render(context);
-    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-    m_PlaneShader.EnableShader(context);
-    // m_Ocean.Render(context);
-     //render our GUI
-
-
-     //prepare transform for floor object. 
 
     if (m_postProcessProperties.GetPostProcess()) {
         m_postProcess->SetSourceTexture(m_FirstRenderPass->getShaderResourceView());
@@ -398,7 +305,7 @@ void Game::Render()
     }
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-    m_Camera01.Update(); //Late update so plane moves slowl
+    m_Camera01.Update(); //Late update so plane is not jittery
 
     // Show the new frame.
     m_deviceResources->Present();
@@ -420,41 +327,35 @@ void Game::RenderTexturePass1()
     //Set Rendering states. 
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-    context->RSSetState(m_states->CullNone());
+    context->RSSetState(m_states->CullClockwise());
     //context->RSSetState(m_states->Wireframe());
 
 
-    SimpleMath::Matrix currentTreePosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
-    SimpleMath::Matrix currentPlanePosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
+    m_TreeShader.EnableShader(context);
+    RenderPlacedObjects(context);
+    RenderCollectables(context);
+
+
+
+
+    m_world = SimpleMath::Matrix::Identity;
+    SimpleMath::Matrix scale = SimpleMath::Matrix::CreateScale(0.5);
+    SimpleMath::Matrix currentObjectPosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
     SimpleMath::Matrix planeRotation = SimpleMath::Matrix::CreateFromYawPitchRoll(m_Camera01.getRotation().y, m_Camera01.getRotation().x - 90, m_Camera01.getRotation().z);
-
-
-    SimpleMath::Matrix planeScale = SimpleMath::Matrix::CreateScale(0.5);
-
-
-
-
     m_PlaneShader.EnableShader(context);
-
-    m_world = m_world * planeScale * planeRotation * currentPlanePosition;
+    m_world = scale * planeRotation * currentObjectPosition;
     m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
     m_PlaneModel.Render(context);
 
-    m_BasicShaderPair.EnableShader(context);
-    m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, flatRock.Get());
 
-    m_world = SimpleMath::Matrix::Identity; //set world back to identity
-    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(1);
+
+    m_world = SimpleMath::Matrix::Identity;
+    m_BasicShaderPair.EnableShader(context);
     SimpleMath::Matrix terrainPosition = SimpleMath::Matrix::CreateTranslation(0.0, -0.6, 0.0);
-    m_world = m_world * newScale * terrainPosition;
-
-    m_BasicShaderPair.EnableShader(context);
+    m_world = m_world * terrainPosition;
     m_BasicShaderPair.SetShaderParametersTerrain(context, &m_world, &m_view, &m_projection, &m_Light, m_grassTex.Get(), m_groundTex.Get(),
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain);
-
     m_Terrain.Render(context);
-    m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-    m_PlaneShader.EnableShader(context);
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
@@ -731,6 +632,74 @@ bool Game::CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3
     equal = equal && (abs(v1.x - v2.x) < threshold);
     equal = equal && (abs(v1.y - v2.y) < threshold);
     return equal && (abs(v1.z - v2.z) < threshold);
+}
+void Game::RenderPlacedObjects(ID3D11DeviceContext* context) {
+    std::vector<PlacedObjects::PlacedObjectType> placedObjects = m_placedObjects.GetObjectPositions();
+    SimpleMath::Matrix currentObjPosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
+    for (int i = 0;i < placedObjects.size();i++) {
+        m_world = SimpleMath::Matrix::Identity; //set world back to identity
+        currentObjPosition = SimpleMath::Matrix::CreateTranslation(placedObjects[i].position);
+        m_world = m_world * currentObjPosition;
+        m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+        m_TreeModel.Render(context);
+    }
+    /*for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
+       m_world = SimpleMath::Matrix::Identity; //set world back to identity
+       currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_PositionsOnTerrain[i] + Vector3(0, 0.23, 0));
+      // treeScale = SimpleMath::Matrix::CreateScale(1 );
+       m_world = m_world * currentTreePosition;
+       m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+       m_TreeModel.Render(context);
+   }*/
+}
+void Game::RenderCollectables(ID3D11DeviceContext* context) {
+    SimpleMath::Matrix coinLocalRotation = SimpleMath::Matrix::CreateRotationY((m_timer.GetTotalSeconds() / 1.5));
+    SimpleMath::Matrix currentObjectPosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
+    for (int i = 0; i < m_coinPositions.size(); i++) {
+        m_world = SimpleMath::Matrix::Identity; //set world back to identity
+        currentObjectPosition = SimpleMath::Matrix::CreateTranslation(m_coinPositions[i]);
+        m_world = m_world  * coinLocalRotation * currentObjectPosition;
+        m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+        m_CoinModel.Render(context);
+    }
+}
+void Game::PopulatePlacedObjectArrays()
+{
+    m_placedObjects.ClearCoinPositions();
+    m_placedObjects.ClearObjectPositions();
+    m_PositionsOnTerrain = m_Terrain.randomPointsOnTerrain();
+    m_placedObjects.AddToCoinPositions(m_Terrain.GetCameraYPos());
+    m_coinPositions = m_placedObjects.GetCoinPositions();
+}
+void Game::RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos) {
+    if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) && (m_editTerrain || m_placeTrees)) {
+
+        SimpleMath::Vector3 rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
+        rayCast.Normalize();
+        Vector3 positionOnTerrain = PositionOnTerrain(rayCast, currentPos);
+        if (m_editTerrain)
+        {
+            int editTerrainDirection = m_gameInputCommands.leftMouse ? 1 : -1;
+            if (positionOnTerrain.x != -10) m_Terrain.ManipulateTerrain(positionOnTerrain.x, positionOnTerrain.z, device, editTerrainDirection);
+        }
+        if (m_placeTrees) {
+            m_placedObjects.AddToObjectPositions(positionOnTerrain + Vector3(0, 0.23, 0));
+        }
+
+    }
+}
+bool Game::LerpPositionAndRotation(Vector3 currentPosition, Vector3 expectedPosition, Vector3 expectedRotation)
+{
+    if (!CompareVectorsApproxEqual(currentPosition, expectedPosition, 0.1f)) {
+
+        SimpleMath::Vector3 difference = expectedPosition - currentPosition;
+        SimpleMath::Vector3 differenceInRotation = expectedRotation - m_Camera01.getRotation();
+        m_Camera01.setPosition(currentPosition + difference * 0.03f);
+        m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
+        return false;
+    }
+    return true;
+
 }
 void Game::OnDeviceLost()
 {

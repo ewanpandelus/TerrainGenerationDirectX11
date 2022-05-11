@@ -344,7 +344,7 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 
 			}
 			counter++;
-			//	Box box;
+
 			Triangle triangle;
 
 
@@ -377,7 +377,7 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 			triangleArray.push_back(triangle);
 
 
-			//box.triangles[0] = triangle;
+
 			// Bottom left.
 			vertices[index].position = DirectX::SimpleMath::Vector3(m_heightMap[index1].x, m_heightMap[index1].y, m_heightMap[index1].z);
 			vertices[index].normal = DirectX::SimpleMath::Vector3(m_heightMap[index1].nx, m_heightMap[index1].ny, m_heightMap[index1].nz);
@@ -406,9 +406,7 @@ bool Terrain::InitializeBuffers(ID3D11Device* device)
 			triangle.trianglePositions[2] = DirectX::SimpleMath::Vector3(m_heightMap[index2].x, m_heightMap[index2].y, m_heightMap[index2].z);
 			triangleArray.push_back(triangle);
 
-			//box.triangles[1] = triangle;
-
-			//SetBoxBounds(box);
+		
 
 		}
 
@@ -468,15 +466,15 @@ void Terrain::ManipulateTerrain(int x, int z, ID3D11Device* device, int up) {
 
 	if (x <= 0 || x == m_terrainWidth || z == m_terrainHeight || z <= 0) return;
 	int index = ((m_terrainHeight * z) + x);
-	m_heightMap[index].y += 1 * up;
-	m_heightMap[(index)+1].y += 1 * up;
-	m_heightMap[(index)+1 + m_terrainHeight].y += 1 * up;
-	m_heightMap[(index)+m_terrainHeight].y += 1 * up;
-	m_heightMap[(index)-m_terrainHeight].y += 1 * up;
-	m_heightMap[(index)-1 + m_terrainHeight].y += 1 * up;
-	m_heightMap[(index)-1].y += 1 * up;
-	m_heightMap[(index)-1 - m_terrainHeight].y += 1 * up;
-	m_heightMap[(index)+1 - m_terrainHeight].y += 1 * up;
+	m_heightMap[index].y += 0.33 * up;
+	m_heightMap[(index)+1].y += 0.33 * up;
+	m_heightMap[(index)+1 + m_terrainHeight].y += 0.33 * up;
+	m_heightMap[(index)+m_terrainHeight].y += 0.33 * up;
+	m_heightMap[(index)-m_terrainHeight].y += 0.33 * up;
+	m_heightMap[(index)-1 + m_terrainHeight].y += 0.33 * up;
+	m_heightMap[(index)-1].y += 0.33 * up;
+	m_heightMap[(index)-1 - m_terrainHeight].y += 0.33 * up;
+	m_heightMap[(index)+1 - m_terrainHeight].y += 0.33 * up;
 	CalculateNormals();
 	InitializeBuffers(device);
 
