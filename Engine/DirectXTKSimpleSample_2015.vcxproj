@@ -186,6 +186,7 @@
     <ClInclude Include="MouseRay.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PerlinNoise.h" />
+    <ClInclude Include="PlacedObjects.h" />
     <ClInclude Include="PostProcessEffects.h" />
     <ClInclude Include="RayTriangleIntersection.h" />
     <ClInclude Include="ReadData.h" />
@@ -221,6 +222,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="PerlinNoise.cpp" />
+    <ClCompile Include="PlacedObjects.cpp" />
     <ClCompile Include="PostProcessEffects.cpp" />
     <ClCompile Include="RayTriangleIntersection.cpp" />
     <ClCompile Include="RenderTexture.cpp" />

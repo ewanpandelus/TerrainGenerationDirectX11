@@ -19,6 +19,7 @@
 #include "PlaneShader.h"
 #include "TreeShader.h"
 #include "PostProcess.h"
+#include "PlacedObjects.h"
 #include "PostProcessEffects.h"
 
 
@@ -152,6 +153,7 @@ private:
     DirectX::SimpleMath::Matrix                                             m_projection;
     std::unique_ptr<BasicPostProcess>                                       m_postProcess;
     RayTriangleIntersection                                                 m_rayTriIntersect;
+    PlacedObjects                                                           m_placedObjects;
     MouseRay                                                                m_mouseRay;
     CameraMovement                                                          m_CameraMovement;
     PostProcessEffects                                                      m_postProcessProperties;
@@ -168,7 +170,7 @@ private:
     bool                                                                    m_editTerrain = false;
     bool                                                                    m_placeTrees = false;
     bool                                                                    m_smoothTerrainTransition = false;
-    SimpleMath::Vector3                                                     m_treePosition;
+    SimpleMath::Vector3                                                     m_placedObjectPosition;
     SimpleMath::Vector3                                                     m_planeRotation;
     SimpleMath::Vector3                                                     m_planeTransform;
     std::vector<SimpleMath::Vector3>                                        m_PositionsOnTerrain;

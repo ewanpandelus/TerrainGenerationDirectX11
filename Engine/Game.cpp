@@ -5,7 +5,7 @@
 
 #include "pch.h"
 #include "Game.h"
-
+#include "PlacedObjects.h"
 
 //toreorganise
 #include <fstream>
@@ -159,7 +159,7 @@ void Game::Update(DX::StepTimer const& timer)
 
     if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) && (m_editTerrain || m_placeTrees)) {
 
-        SimpleMath::Vector3    rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
+        SimpleMath::Vector3 rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
         rayCast.Normalize();
         Vector3    positionOnTerrain = PositionOnTerrain(rayCast, currentPosition);
         if (m_editTerrain)
@@ -168,7 +168,7 @@ void Game::Update(DX::StepTimer const& timer)
             if (positionOnTerrain.x != -10) m_Terrain.ManipulateTerrain(positionOnTerrain.x, positionOnTerrain.z, device, editTerrainDirection);
         }
         if (m_placeTrees) {
-            m_treePosition = positionOnTerrain + SimpleMath::Vector3(-1, -1, -1);
+            m_placedObjects.AddToObjectPositions(positionOnTerrain+ Vector3(0,0.23,0));
         }
 
     }
@@ -230,6 +230,7 @@ void Game::Update(DX::StepTimer const& timer)
             m_Terrain.GenerateHeightMap(device);
 
         }
+        m_placedObjects.ClearObjectPositions();
         m_PositionsOnTerrain = m_Terrain.randomPointsOnTerrain();
 
     }
@@ -310,21 +311,29 @@ void Game::Render()
     context->RSSetState(m_states->CullNone());
     RenderTexturePass1();
 
-
+    std::vector<SimpleMath::Vector3> placedObjects = m_placedObjects.GetObjectPositions();
 
     SimpleMath::Matrix currentTreePosition = SimpleMath::Matrix::CreateTranslation(0,0,0);
-    SimpleMath::Matrix treeScale = SimpleMath::Matrix::CreateScale(1);
-
+    SimpleMath::Matrix treeScale = SimpleMath::Matrix::CreateScale(4);
+    currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_placedObjectPosition);
     m_TreeShader.EnableShader(context);
-    for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
+    /*for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
         m_world = SimpleMath::Matrix::Identity; //set world back to identity
         currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_PositionsOnTerrain[i] + Vector3(0, 0.23, 0));
        // treeScale = SimpleMath::Matrix::CreateScale(1 );
         m_world = m_world * currentTreePosition;
         m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
         m_TreeModel.Render(context);
-    }
- 
+    }*/
+    for (int i = 0;i < placedObjects.size();i++) {
+      m_world = SimpleMath::Matrix::Identity; //set world back to identity
+      currentTreePosition = SimpleMath::Matrix::CreateTranslation(placedObjects[i]);
+      treeScale = SimpleMath::Matrix::CreateScale(1 );
+      m_world = m_world * currentTreePosition;
+      m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+      m_TreeModel.Render(context);
+  }
+   
     
    
 
@@ -695,6 +704,7 @@ SimpleMath::Vector3 Game::PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleM
         Vector3 rayDest = (currentPosition)+SimpleMath::Vector3(rayCast) * 1000;
         if (m_rayTriIntersect.Intersects(currentPosition, rayDest, tri.trianglePositions[0], tri.trianglePositions[1], tri.trianglePositions[2], 1))
         {
+         
             return tri.trianglePositions[2];
 
         }

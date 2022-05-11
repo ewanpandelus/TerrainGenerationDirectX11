@@ -81,6 +81,7 @@
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="TreeShader.h" />
+    <ClInclude Include="PlacedObjects.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -139,6 +140,7 @@
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="TreeShader.cpp" />
+    <ClCompile Include="PlacedObjects.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
