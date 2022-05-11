@@ -141,7 +141,9 @@ void Game::Update(DX::StepTimer const& timer)
 {
 
     auto device = m_deviceResources->GetD3DDevice();
-    m_elapsedTime += timer.GetElapsedSeconds();
+  
+    m_elapsedTime += m_timer.GetElapsedSeconds() * (1 - m_elapsedTime) + 0.002f;
+   
     if (m_terrainLerpVal < 1.0)
     {
         m_Terrain.LerpTerrainHeight(device, m_terrainLerpVal);
@@ -151,34 +153,36 @@ void Game::Update(DX::StepTimer const& timer)
     Vector3 inFront = m_Camera01.getForward();
 
     RayCasting(device, currentPosition);
-
-    if (m_lerpedToPlayMode)
+    if (m_lerpingPosition) 
     {
-        m_planeTransform =  m_Camera01.getPosition() + inFront * 3;
-        m_Camera01.setPosition(currentPosition + inFront * 0.1f);
+        if (m_playMode) 
+        {
+            LerpPositionAndRotation(SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() + 5), 50),
+                Vector3(90.0f, 89.5f, 0.0f), m_elapsedTime);
+        }
+        else
+        {
+            LerpPositionAndRotation(SimpleMath::Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10),
+                Vector3(90.5f, 89.545f, 0.0f), m_elapsedTime);
+        }
     }
 
     if (m_gameInputCommands.p && m_elapsedTime > 1)
     {
         m_playMode = !m_playMode;
+        m_lerpingPosition = true;
+        m_positionBeforeLerp = currentPosition;
+        m_rotationBeforeLerp = m_Camera01.getRotation();
         m_elapsedTime = 0;
     }
-    if (m_playMode)
+    if (m_playMode&&!m_lerpingPosition)
     {
-        if (!m_lerpedToPlayMode) {
-          
-            if(LerpPositionAndRotation(currentPosition, SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() + 5), 50), Vector3(90.0f, 89.5f, 0.0f)))
-            {
-                m_lerpedToPlayMode = true;
-            }
-        }
         HandlePlaneInput();
+        m_planeTransform = m_Camera01.getPosition() + inFront * 3;
+        m_Camera01.setPosition(currentPosition + inFront * 0.1f);
     }
-    else
-    {
-        m_lerpedToPlayMode = (LerpPositionAndRotation(currentPosition, SimpleMath::Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10), Vector3(90.5f, 89.545f, 0.0f)));
-       
-    }
+  
+  
     if (m_gameInputCommands.generate)
     {
         if (m_smoothTerrainTransition)
@@ -194,18 +198,9 @@ void Game::Update(DX::StepTimer const& timer)
         PopulatePlacedObjectArrays(); 
     }
 
-
-
-    m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
-
-
-    //m_Camera01.setPosition(position);
-
     m_postProcess = std::make_unique<BasicPostProcess>(device);
     m_view = m_Camera01.getCameraMatrix();
     m_world = Matrix::Identity;
-
-    /*create our UI*/
     SetupGUI();
 
 #ifdef DXTK_AUDIO
@@ -475,6 +470,7 @@ void Game::CreateDeviceDependentResources()
 
     //load and set up our Vertex and Pixel Shaders
     m_BasicShaderPair.InitStandard(device, L"light_vs.cso", L"light_ps.cso");
+    m_CoinShader.InitStandard(device, L"coin_vs.cso", L"coin_ps.cso");
     m_PlaneShader.InitStandard(device, L"plane_vs.cso", L"plane_ps.cso");
     m_TreeShader.InitStandard(device, L"tree_vs.cso", L"tree_ps.cso");
 
@@ -605,9 +601,7 @@ SimpleMath::Vector3 Game::PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleM
         Vector3 rayDest = (currentPosition)+SimpleMath::Vector3(rayCast) * 1000;
         if (m_rayTriIntersect.Intersects(currentPosition, rayDest, tri.trianglePositions[0], tri.trianglePositions[1], tri.trianglePositions[2], 1))
         {
-         
             return tri.trianglePositions[2];
-
         }
 
 
@@ -653,13 +647,15 @@ void Game::RenderPlacedObjects(ID3D11DeviceContext* context) {
    }*/
 }
 void Game::RenderCollectables(ID3D11DeviceContext* context) {
+    m_CoinShader.EnableShader(context);
     SimpleMath::Matrix coinLocalRotation = SimpleMath::Matrix::CreateRotationY((m_timer.GetTotalSeconds() / 1.5));
+    SimpleMath::Matrix coinScale = SimpleMath::Matrix::CreateScale(0.5);
     SimpleMath::Matrix currentObjectPosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
     for (int i = 0; i < m_coinPositions.size(); i++) {
         m_world = SimpleMath::Matrix::Identity; //set world back to identity
         currentObjectPosition = SimpleMath::Matrix::CreateTranslation(m_coinPositions[i]);
-        m_world = m_world  * coinLocalRotation * currentObjectPosition;
-        m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+        m_world = m_world  *coinScale * coinLocalRotation * currentObjectPosition;
+        m_CoinShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
         m_CoinModel.Render(context);
     }
 }
@@ -688,19 +684,18 @@ void Game::RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos) {
 
     }
 }
-bool Game::LerpPositionAndRotation(Vector3 currentPosition, Vector3 expectedPosition, Vector3 expectedRotation)
+void Game::LerpPositionAndRotation( SimpleMath::Vector3 expectedPosition,  SimpleMath::Vector3 expectedRotation, float t)
 {
-    if (!CompareVectorsApproxEqual(currentPosition, expectedPosition, 0.1f)) {
-
-        SimpleMath::Vector3 difference = expectedPosition - currentPosition;
-        SimpleMath::Vector3 differenceInRotation = expectedRotation - m_Camera01.getRotation();
-        m_Camera01.setPosition(currentPosition + difference * 0.03f);
-        m_Camera01.setRotation(m_Camera01.getRotation() + differenceInRotation * 0.03f);
-        return false;
+    SimpleMath::Vector3 difference = expectedPosition - m_positionBeforeLerp;
+    SimpleMath::Vector3 differenceInRotation = expectedRotation - m_rotationBeforeLerp;
+    m_Camera01.setPosition(m_positionBeforeLerp + (difference * t));
+    m_Camera01.setRotation(m_rotationBeforeLerp + (differenceInRotation * t));
+    if (t >= 1) {
+        m_lerpingPosition = false; 
     }
-    return true;
-
 }
+
+
 void Game::OnDeviceLost()
 {
     m_states.reset();
@@ -718,3 +713,4 @@ void Game::OnDeviceRestored()
     CreateWindowSizeDependentResources();
 }
 #pragma endregion
+

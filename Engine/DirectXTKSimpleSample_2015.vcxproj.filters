@@ -80,8 +80,13 @@
     <ClInclude Include="PlaneShader.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="TreeShader.h" />
     <ClInclude Include="PlacedObjects.h" />
+    <ClInclude Include="CoinShader.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeShader.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -139,8 +144,13 @@
     <ClCompile Include="PlaneShader.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="TreeShader.cpp" />
     <ClCompile Include="PlacedObjects.cpp" />
+    <ClCompile Include="CoinShader.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeShader.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -193,6 +203,12 @@
       <Filter>Assets</Filter>
     </FxCompile>
     <FxCompile Include="tree_vs.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="coin_ps.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="coin_vs.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
   </ItemGroup>

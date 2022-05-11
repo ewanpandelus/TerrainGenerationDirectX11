@@ -29,9 +29,7 @@ bool RayTriangleIntersection::Intersects(DirectX::SimpleMath::Vector3 orig, Dire
 	DirectX::SimpleMath::Vector3  v0, DirectX::SimpleMath::Vector3 v1, DirectX::SimpleMath::Vector3 v2,
 	float t) {
 	float kEpsilon = 0.00001f;
-	/*v0 /= 10;
-	v1 /= 10;
-	v2 /= 10;*/
+
 	DirectX::SimpleMath::Vector3 v0v1 = v1 - v0;
 	DirectX::SimpleMath::Vector3 v0v2 = v2 - v0;
 	// no need to normalize
