@@ -77,9 +77,9 @@ private:
     bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2, float threshold);
     bool HandlePlaneInput();
     void RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos);
-    void LerpPositionAndRotation( SimpleMath::Vector3 expectedPosition,  SimpleMath::Vector3 expectedRotation, float t);
+    void LerpPositionAndRotation(SimpleMath::Vector3 expectedPosition, SimpleMath::Vector3 expectedRotation, float t);
     void PopulatePlacedObjectArrays();
-  
+
     void RenderPlacedObjects(ID3D11DeviceContext* context);
     void RenderCollectables(ID3D11DeviceContext* context);
 
@@ -167,10 +167,10 @@ private:
     CameraMovement                                                          m_CameraMovement;
     PostProcessEffects                                                      m_postProcessProperties;
     Collision                                                               m_Collision;
-    
+
 
     float                                                                   m_terrainLerpVal = 2;
-    
+
     float                                                                   m_CameraSmoothMovement = 0.03;
     int                                                                     m_screenWidth;
     int                                                                     m_screenHeight;
@@ -181,14 +181,14 @@ private:
     bool                                                                    m_editTerrain = false;
     bool                                                                    m_placeTrees = false;
     bool                                                                    m_smoothTerrainTransition = false;
-   
+
     SimpleMath::Vector3                                                     m_positionBeforeLerp;
     SimpleMath::Vector3                                                     m_rotationBeforeLerp;
-    
+
     SimpleMath::Vector3                                                     m_planeRotation;
     SimpleMath::Vector3                                                     m_planeTransform;
     std::vector<SimpleMath::Vector3>                                        m_PositionsOnTerrain;
-    std::vector<SimpleMath::Vector3>                                        m_coinPositions;
+    std::vector<PlacedObjects::CoinObjectType>                              m_coins;
     SimpleMath::Vector3                                                     m_placedObjectPosition;
 
 

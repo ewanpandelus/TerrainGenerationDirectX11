@@ -10,10 +10,10 @@ PlacedObjects::~PlacedObjects()
 void PlacedObjects::AddToObjectPositions(SimpleMath::Vector3 objectPosition) {
 	PlacedObjectType placedObj;
 	placedObj.position = objectPosition;
-//	placedObj.scale = 1 + (rand() % 2) / 10.0;
+	//	placedObj.scale = 1 + (rand() % 2) / 10.0;
 
 	m_objectPositions.push_back(placedObj);
-	
+
 }
 std::vector<PlacedObjects::PlacedObjectType> PlacedObjects::GetObjectPositions() {
 	return m_objectPositions;
@@ -26,15 +26,42 @@ void PlacedObjects::ClearObjectPositions()
 
 
 void PlacedObjects::AddToCoinPositions(float terrainY) {
-	for (int i = 0; i < 4; i++) 
+	for (int i = 0; i < 7; i++)
 	{
-		m_coinPositions.push_back(SimpleMath::Vector3(5 + rand() % 100, terrainY + 1 + rand() % 4, 5 + rand() % 100));
+		CoinObjectType coin;
+		coin.position = SimpleMath::Vector3(5 + rand() % 100, terrainY + 1 + rand() % 4, 5 + rand() % 100);
+		m_coins.push_back(coin);
 	}
 }
-std::vector<SimpleMath::Vector3> PlacedObjects::GetCoinPositions() {
-	return m_coinPositions;
+std::vector<PlacedObjects::CoinObjectType> PlacedObjects::GetCoins() {
+	return m_coins;
 }
 void PlacedObjects::ClearCoinPositions()
 {
-	m_coinPositions.clear();
+	m_coins.clear();
+}
+void PlacedObjects::RemoveCoin(int index)
+{
+	m_coins.erase(m_coins.begin() + index);
+}
+void PlacedObjects::AssignCollected(int index)
+{
+	m_coins[index].collected = true;
+}
+void PlacedObjects::DecreaseCoinScale()
+{
+	int index = 0;
+	int deleteIndex = -1;
+	for each (CoinObjectType var in m_coins)
+	{
+		if (var.collected == true)
+		{
+			m_coins[index].scale -= 0.05f;
+		}
+		if (var.scale <= 0) deleteIndex = index;
+		index++;
+	}
+	if (deleteIndex >= 0) {
+		RemoveCoin(deleteIndex);
+	}
 }

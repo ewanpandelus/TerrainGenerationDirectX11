@@ -24,7 +24,7 @@ struct OutputType
     float3 normal : NORMAL;
     float3 position3D : TEXCOORD2;
     float time : TIME;
-    float waveCol : WAVECOLOR;
+
 
 };
 float hash(float2 n)
@@ -72,16 +72,10 @@ OutputType main(InputType input)
     output.normal = mul(input.normal, (float3x3)worldMatrix);
 
 
-    float amp = 2;
-    float waveLength = 10;
-
-
-    float3 p = output.position.xyz;
-
-    p.y = sin(p.x);
 
 
 
+    output.position.y += sin(time * 2) / 2;
     //output.position.xyz = p;
     // Calculate the position of the vertex against the world, view, and projection matrices.
     output.position = mul(output.position, viewMatrix);

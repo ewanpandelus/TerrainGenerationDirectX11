@@ -141,9 +141,9 @@ void Game::Update(DX::StepTimer const& timer)
 {
 
     auto device = m_deviceResources->GetD3DDevice();
-  
+
     m_elapsedTime += m_timer.GetElapsedSeconds() * (1 - m_elapsedTime) + 0.002f;
-   
+    m_placedObjects.DecreaseCoinScale();
     if (m_terrainLerpVal < 1.0)
     {
         m_Terrain.LerpTerrainHeight(device, m_terrainLerpVal);
@@ -153,9 +153,9 @@ void Game::Update(DX::StepTimer const& timer)
     Vector3 inFront = m_Camera01.getForward();
 
     RayCasting(device, currentPosition);
-    if (m_lerpingPosition) 
+    if (m_lerpingPosition)
     {
-        if (m_playMode) 
+        if (m_playMode)
         {
             LerpPositionAndRotation(SimpleMath::Vector3(50, (m_Terrain.GetCameraYPos() + 5), 50),
                 Vector3(90.0f, 89.5f, 0.0f), m_elapsedTime);
@@ -175,14 +175,14 @@ void Game::Update(DX::StepTimer const& timer)
         m_rotationBeforeLerp = m_Camera01.getRotation();
         m_elapsedTime = 0;
     }
-    if (m_playMode&&!m_lerpingPosition)
+    if (m_playMode && !m_lerpingPosition)
     {
         HandlePlaneInput();
         m_planeTransform = m_Camera01.getPosition() + inFront * 3;
         m_Camera01.setPosition(currentPosition + inFront * 0.1f);
     }
-  
-  
+
+
     if (m_gameInputCommands.generate)
     {
         if (m_smoothTerrainTransition)
@@ -195,7 +195,15 @@ void Game::Update(DX::StepTimer const& timer)
             m_Terrain.GenerateHeightMap(device);
 
         }
-        PopulatePlacedObjectArrays(); 
+        if (!m_playMode) 
+        {
+            m_lerpingPosition = true;
+            m_elapsedTime = 0;
+            m_positionBeforeLerp = currentPosition;
+            m_rotationBeforeLerp = m_Camera01.getRotation();
+        
+        }
+        PopulatePlacedObjectArrays();
     }
 
     m_postProcess = std::make_unique<BasicPostProcess>(device);
@@ -268,8 +276,8 @@ void Game::Render()
 
     m_TreeShader.EnableShader(context);
     RenderPlacedObjects(context);
-    RenderCollectables(context);
-   
+    if(m_playMode) RenderCollectables(context);
+
 
 
 
@@ -278,13 +286,13 @@ void Game::Render()
     SimpleMath::Matrix currentObjectPosition = SimpleMath::Matrix::CreateTranslation(m_planeTransform);
     SimpleMath::Matrix planeRotation = SimpleMath::Matrix::CreateFromYawPitchRoll(m_Camera01.getRotation().y, m_Camera01.getRotation().x - 90, m_Camera01.getRotation().z);
     m_PlaneShader.EnableShader(context);
-    m_world =  scale * planeRotation * currentObjectPosition;
+    m_world = scale * planeRotation * currentObjectPosition;
     m_PlaneShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
     m_PlaneModel.Render(context);
 
-   
-    
-    m_world = SimpleMath::Matrix::Identity; 
+
+
+    m_world = SimpleMath::Matrix::Identity;
     m_BasicShaderPair.EnableShader(context);
     SimpleMath::Matrix terrainPosition = SimpleMath::Matrix::CreateTranslation(0.0, -0.6, 0.0);
     m_world = m_world * terrainPosition;
@@ -328,7 +336,7 @@ void Game::RenderTexturePass1()
 
     m_TreeShader.EnableShader(context);
     RenderPlacedObjects(context);
-    RenderCollectables(context);
+    if (m_playMode) RenderCollectables(context);
 
 
 
@@ -648,13 +656,18 @@ void Game::RenderPlacedObjects(ID3D11DeviceContext* context) {
 }
 void Game::RenderCollectables(ID3D11DeviceContext* context) {
     m_CoinShader.EnableShader(context);
+    m_coins = m_placedObjects.GetCoins();
     SimpleMath::Matrix coinLocalRotation = SimpleMath::Matrix::CreateRotationY((m_timer.GetTotalSeconds() / 1.5));
-    SimpleMath::Matrix coinScale = SimpleMath::Matrix::CreateScale(0.5);
+    SimpleMath::Matrix coinScale = SimpleMath::Matrix::CreateScale(0.4);
     SimpleMath::Matrix currentObjectPosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
-    for (int i = 0; i < m_coinPositions.size(); i++) {
+    for (int i = 0; i < m_coins.size(); i++) {
         m_world = SimpleMath::Matrix::Identity; //set world back to identity
-        currentObjectPosition = SimpleMath::Matrix::CreateTranslation(m_coinPositions[i]);
-        m_world = m_world  *coinScale * coinLocalRotation * currentObjectPosition;
+        if (CompareVectorsApproxEqual(m_planeTransform, m_coins[i].position, 1)) {
+            m_placedObjects.AssignCollected(i);
+        }
+        coinScale = SimpleMath::Matrix::CreateScale(m_coins[i].scale);
+        currentObjectPosition = SimpleMath::Matrix::CreateTranslation(m_coins[i].position);
+        m_world = m_world * coinScale * coinLocalRotation * currentObjectPosition;
         m_CoinShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
         m_CoinModel.Render(context);
     }
@@ -665,7 +678,7 @@ void Game::PopulatePlacedObjectArrays()
     m_placedObjects.ClearObjectPositions();
     m_PositionsOnTerrain = m_Terrain.randomPointsOnTerrain();
     m_placedObjects.AddToCoinPositions(m_Terrain.GetCameraYPos());
-    m_coinPositions = m_placedObjects.GetCoinPositions();
+
 }
 void Game::RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos) {
     if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) && (m_editTerrain || m_placeTrees)) {
@@ -684,14 +697,14 @@ void Game::RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos) {
 
     }
 }
-void Game::LerpPositionAndRotation( SimpleMath::Vector3 expectedPosition,  SimpleMath::Vector3 expectedRotation, float t)
+void Game::LerpPositionAndRotation(SimpleMath::Vector3 expectedPosition, SimpleMath::Vector3 expectedRotation, float t)
 {
     SimpleMath::Vector3 difference = expectedPosition - m_positionBeforeLerp;
     SimpleMath::Vector3 differenceInRotation = expectedRotation - m_rotationBeforeLerp;
     m_Camera01.setPosition(m_positionBeforeLerp + (difference * t));
     m_Camera01.setRotation(m_rotationBeforeLerp + (differenceInRotation * t));
     if (t >= 1) {
-        m_lerpingPosition = false; 
+        m_lerpingPosition = false;
     }
 }
 
@@ -706,6 +719,7 @@ void Game::OnDeviceLost()
     m_testmodel.reset();
     m_batchInputLayout.Reset();
 }
+
 
 void Game::OnDeviceRestored()
 {

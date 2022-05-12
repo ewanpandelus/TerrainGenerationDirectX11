@@ -156,7 +156,7 @@ float4 main(InputType input) : SV_TARGET
      color = ambientColor + (diffuseColor * lightIntensity); //adding ambient
      color = saturate(color);
 
-     return float4(color, 1) * ridgedMF(st/10)* float4(1,0.6,0,1);
+     return float4(color, 1) * ridgedMF(st/20)* float4(0.2,0.2,1,1)*1.4;
 
 	// Sample the pixel color from the texture using the sampler at this texture coordinate location.
 
