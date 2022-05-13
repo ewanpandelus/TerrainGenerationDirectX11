@@ -143,6 +143,7 @@ void Game::Update(DX::StepTimer const& timer)
     auto device = m_deviceResources->GetD3DDevice();
 
     m_elapsedTime += m_timer.GetElapsedSeconds() * (1 - m_elapsedTime) + 0.002f;
+    m_guiTimer += m_timer.GetElapsedSeconds();
     m_placedObjects.DecreaseCoinScale();
     if (m_terrainLerpVal < 1.0)
     {
@@ -152,7 +153,9 @@ void Game::Update(DX::StepTimer const& timer)
     Vector3 currentPosition = m_Camera01.getPosition();
     Vector3 inFront = m_Camera01.getForward();
 
-    RayCasting(device, currentPosition);
+ 
+    if(!m_hoveringUI) RayCasting(device, currentPosition);
+    
     if (m_lerpingPosition)
     {
         if (m_playMode)
@@ -167,19 +170,17 @@ void Game::Update(DX::StepTimer const& timer)
         }
     }
 
-    if (m_gameInputCommands.p && m_elapsedTime > 1)
+    if (m_gameInputCommands.p && m_elapsedTime > 0.5)
     {
         m_playMode = !m_playMode;
-        m_lerpingPosition = true;
-        m_positionBeforeLerp = currentPosition;
-        m_rotationBeforeLerp = m_Camera01.getRotation();
-        m_elapsedTime = 0;
+        SetStartLerpParameters();
     }
+
     if (m_playMode && !m_lerpingPosition)
     {
         HandlePlaneInput();
         m_planeTransform = m_Camera01.getPosition() + inFront * 3;
-        m_Camera01.setPosition(currentPosition + inFront * 0.1f);
+        m_Camera01.setPosition(currentPosition + inFront * 0.2f);
     }
 
 
@@ -197,19 +198,19 @@ void Game::Update(DX::StepTimer const& timer)
         }
         if (!m_playMode) 
         {
-            m_lerpingPosition = true;
-            m_elapsedTime = 0;
-            m_positionBeforeLerp = currentPosition;
-            m_rotationBeforeLerp = m_Camera01.getRotation();
-        
+            SetStartLerpParameters();
         }
         PopulatePlacedObjectArrays();
     }
-
+    if (m_gameInputCommands.h && m_guiTimer>0.2)
+    {
+        m_hideGUI = !m_hideGUI;
+        m_guiTimer = 0;
+    }
     m_postProcess = std::make_unique<BasicPostProcess>(device);
     m_view = m_Camera01.getCameraMatrix();
     m_world = Matrix::Identity;
-    SetupGUI();
+ 
 
 #ifdef DXTK_AUDIO
     m_audioTimerAcc -= (float)timer.GetElapsedSeconds();
@@ -261,11 +262,16 @@ void Game::Render()
     auto renderTargetView = m_deviceResources->GetRenderTargetView();
     auto depthTargetView = m_deviceResources->GetDepthStencilView();
 
-    // Draw Text to the screen
-    m_sprites->Begin();
-    //  m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::Black);
-     // m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::Black);
-    m_sprites->End();
+    if (!m_hideGUI) 
+    {
+        m_sprites->Begin();
+
+        m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::Azure);
+        m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::Azure);
+        m_font->DrawString(m_sprites.get(), L"Press H to hide GUI", XMFLOAT2(10, 70), Colors::Azure);
+        m_sprites->End();
+    }
+ 
 
     //Set Rendering states. 
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
@@ -300,14 +306,19 @@ void Game::Render()
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain);
     m_Terrain.Render(context);
 
+
     if (m_postProcessProperties.GetPostProcess()) {
         m_postProcess->SetSourceTexture(m_FirstRenderPass->getShaderResourceView());
         m_postProcess->SetBloomBlurParameters(1, m_postProcessProperties.GetBloomBlurStength(), m_postProcessProperties.GetBloomBrightness());
         m_postProcess->SetEffect(BasicPostProcess::BloomBlur);
         m_postProcess->Process(context);
     }
-    ImGui::Render();
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    else if(!m_hideGUI)
+    {
+        ImGui::Render();
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    }
+
     m_Camera01.Update(); //Late update so plane is not jittery
 
     // Show the new frame.
@@ -323,9 +334,15 @@ void Game::RenderTexturePass1()
     // Clear the render to texture.
     m_FirstRenderPass->clearRenderTarget(context, 0.0f, 0.0f, 1.0f, 1.0f);
 
-    m_sprites->Begin();
-    m_font->DrawString(m_sprites.get(), L"Procedural Methods", XMFLOAT2(10, 10), Colors::Yellow);
-    m_sprites->End();
+    if (!m_hideGUI)
+    {
+        m_sprites->Begin();
+
+        m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::Azure);
+        m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::Azure);
+        m_font->DrawString(m_sprites.get(), L"Press H to hide GUI", XMFLOAT2(10, 70), Colors::Azure);
+        m_sprites->End();
+    }
 
     //Set Rendering states. 
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
@@ -359,10 +376,14 @@ void Game::RenderTexturePass1()
     m_BasicShaderPair.SetShaderParametersTerrain(context, &m_world, &m_view, &m_projection, &m_Light, m_grassTex.Get(), m_groundTex.Get(),
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain);
     m_Terrain.Render(context);
-    ImGui::Render();
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    if (!m_hideGUI) 
+    {
+        SetupGUI();
+        ImGui::Render();
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    }
 
-
+  
     // Reset the render target back to the original back buffer and not the render to texture anymore.	
     context->OMSetRenderTargets(1, &renderTargetView, depthTargetView);
 }
@@ -523,6 +544,7 @@ void Game::SetupGUI()
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
+    ImGuiIO& io = ImGui::GetIO();
 
     ImGui::Begin("Procedural Terrain Parameters");
     ImGui::SliderFloat("Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
@@ -553,15 +575,17 @@ void Game::SetupGUI()
     }
 
     ImGui::End();
-
+    ImGui::SetNextWindowSize(ImVec2(450, 100));
     ImGui::Begin("Post Process Parameters");
     ImGui::Checkbox("PostProcessOn", m_postProcessProperties.SetPostProcessImGUI());
     ImGui::SliderFloat("Bloom Brightness", m_postProcessProperties.SetBloomBrightness(), 0.1f, 3.0f);
     ImGui::SliderFloat("Bloom Blur Strength", m_postProcessProperties.SetBloomBlurRadius(), 0.1f, 3.0f);
+    ImGui::SetNextWindowSize(ImVec2(260, 260));
     ImGui::End();
-
     ImGui::Begin("Manually Modify Terrain");
     ImGui::Checkbox("Modify Terrain with Mouse", &m_editTerrain);
+    ImGui::ColorEdit3("Placed Object Colour", m_placedObjects.SetSelectedColour());
+    m_hoveringUI = io.WantCaptureMouse;
     ImGui::Checkbox("Place Trees", &m_placeTrees);
     ImGui::Checkbox("Choose Terrain Colours", m_Terrain.SetColourTerrain());
     if (m_Terrain.GetColourTerrain()) {
@@ -573,6 +597,8 @@ void Game::SetupGUI()
         ImGui::ColorEdit3("Steep Rock", m_Terrain.SetSteepSlopeColour());
         ImGui::ColorEdit3("Snow", m_Terrain.SetSnowColour());
     }
+    
+
     ImGui::End();
 }
 bool Game::HandlePlaneInput() {
@@ -582,11 +608,11 @@ bool Game::HandlePlaneInput() {
     if (m_gameInputCommands.left && rotation.z > -1)
     {
 
-        rotation.z = rotation.z -= m_Camera01.getRotationSpeed() / 2;
+        rotation.z = rotation.z -= m_Camera01.getRotationSpeed()/1.2;
     }
     if (m_gameInputCommands.right && rotation.z < 1)
     {
-        rotation.z = rotation.z += m_Camera01.getRotationSpeed() / 2;
+        rotation.z = rotation.z += m_Camera01.getRotationSpeed()/1.2;
     }
     if (m_gameInputCommands.forward && rotation.x < 91)
     {
@@ -597,7 +623,7 @@ bool Game::HandlePlaneInput() {
     {
         rotation.x = rotation.x -= m_Camera01.getRotationSpeed() / 3;
     }
-    rotation.y = rotation.y -= rotation.z * (m_Camera01.getRotationSpeed() / 2.7);
+    rotation.y = rotation.y -= rotation.z * (m_Camera01.getRotationSpeed())/2.7;
     m_Camera01.setRotation(rotation);
     m_Camera01.setPosition(currentPosition);
     return true;
@@ -616,6 +642,14 @@ SimpleMath::Vector3 Game::PositionOnTerrain(SimpleMath::Vector3 rayCast, SimpleM
     }
     return Vector3(-10, -10, -10);
 }
+void Game::SetStartLerpParameters() 
+{
+    m_lerpingPosition = true;
+    m_positionBeforeLerp = m_Camera01.getPosition();
+    m_rotationBeforeLerp = m_Camera01.getRotation();
+    m_elapsedTime = 0;
+}
+
 XMVECTOR Game::RayCastDirectionOfMouse(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation)
 {
     const XMVECTOR nearSource = XMVectorSet(m_input.GetMouseX(), m_input.GetMouseY(), 0.0f, 1.0f);
@@ -642,7 +676,8 @@ void Game::RenderPlacedObjects(ID3D11DeviceContext* context) {
         m_world = SimpleMath::Matrix::Identity; //set world back to identity
         currentObjPosition = SimpleMath::Matrix::CreateTranslation(placedObjects[i].position);
         m_world = m_world * currentObjPosition;
-        m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
+        m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, DirectX::SimpleMath::Vector3(placedObjects[i].colour[0]
+            , placedObjects[i].colour[1], placedObjects[i].colour[2]), m_waterTexture.Get());
         m_TreeModel.Render(context);
     }
     /*for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
@@ -676,7 +711,7 @@ void Game::PopulatePlacedObjectArrays()
 {
     m_placedObjects.ClearCoinPositions();
     m_placedObjects.ClearObjectPositions();
-    m_PositionsOnTerrain = m_Terrain.randomPointsOnTerrain();
+    m_positionsOnTerrain = m_Terrain.randomPointsOnTerrain();
     m_placedObjects.AddToCoinPositions(m_Terrain.GetCameraYPos());
 
 }

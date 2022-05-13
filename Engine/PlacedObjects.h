@@ -15,6 +15,7 @@ public:
 	struct PlacedObjectType
 	{
 		SimpleMath::Vector3 position;
+		float colour[3] = {0.2,0.6,0.2};
 		float scale = 1;
 	};
 
@@ -28,11 +29,13 @@ public:
 	void RemoveCoin(int index);
 	void DecreaseCoinScale();
 	void AssignCollected(int index);
+	float* SetSelectedColour();
 
 private:
 
 	std::vector<PlacedObjectType> m_objectPositions;
 	std::vector<CoinObjectType> m_coins;
+	float m_selectedColour[3] = { 1,1,1 };
 
 
 };

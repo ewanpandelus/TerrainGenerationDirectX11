@@ -10,6 +10,10 @@ PlacedObjects::~PlacedObjects()
 void PlacedObjects::AddToObjectPositions(SimpleMath::Vector3 objectPosition) {
 	PlacedObjectType placedObj;
 	placedObj.position = objectPosition;
+	placedObj.colour[0] = m_selectedColour[0];
+	placedObj.colour[1] = m_selectedColour[1];
+	placedObj.colour[2] = m_selectedColour[2];
+
 	//	placedObj.scale = 1 + (rand() % 2) / 10.0;
 
 	m_objectPositions.push_back(placedObj);
@@ -64,4 +68,8 @@ void PlacedObjects::DecreaseCoinScale()
 	if (deleteIndex >= 0) {
 		RemoveCoin(deleteIndex);
 	}
+}
+float* PlacedObjects::SetSelectedColour()
+{
+	return &m_selectedColour[0];
 }

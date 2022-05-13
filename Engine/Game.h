@@ -14,7 +14,6 @@
 #include "RenderTexture.h"
 #include "Terrain.h"
 #include "CameraMovement.h"
-#include "Collision.h"
 #include "MouseRay.h"
 #include "PlaneShader.h"
 #include "TreeShader.h"
@@ -77,6 +76,7 @@ private:
     bool CompareVectorsApproxEqual(SimpleMath::Vector3 v1, SimpleMath::Vector3 v2, float threshold);
     bool HandlePlaneInput();
     void RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos);
+    void SetStartLerpParameters();
     void LerpPositionAndRotation(SimpleMath::Vector3 expectedPosition, SimpleMath::Vector3 expectedRotation, float t);
     void PopulatePlacedObjectArrays();
 
@@ -166,30 +166,32 @@ private:
     MouseRay                                                                m_mouseRay;
     CameraMovement                                                          m_CameraMovement;
     PostProcessEffects                                                      m_postProcessProperties;
-    Collision                                                               m_Collision;
+  
 
 
     float                                                                   m_terrainLerpVal = 2;
-
-    float                                                                   m_CameraSmoothMovement = 0.03;
+    float                                                                   m_elapsedTime = 1;
+    float                                                                   m_guiTimer = 0;
     int                                                                     m_screenWidth;
     int                                                                     m_screenHeight;
-    float                                                                   m_elapsedTime = 0;
+
 
     bool                                                                    m_lerpingPosition = false;
     bool                                                                    m_playMode = true;
     bool                                                                    m_editTerrain = false;
     bool                                                                    m_placeTrees = false;
     bool                                                                    m_smoothTerrainTransition = false;
-
+    bool                                                                    m_hideGUI = false;
+    bool                                                                    m_hoveringUI = false;
     SimpleMath::Vector3                                                     m_positionBeforeLerp;
     SimpleMath::Vector3                                                     m_rotationBeforeLerp;
 
     SimpleMath::Vector3                                                     m_planeRotation;
     SimpleMath::Vector3                                                     m_planeTransform;
-    std::vector<SimpleMath::Vector3>                                        m_PositionsOnTerrain;
+    std::vector<SimpleMath::Vector3>                                        m_positionsOnTerrain;
     std::vector<PlacedObjects::CoinObjectType>                              m_coins;
     SimpleMath::Vector3                                                     m_placedObjectPosition;
+
 
 
 

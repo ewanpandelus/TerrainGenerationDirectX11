@@ -169,7 +169,6 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CameraMovement.h" />
     <ClInclude Include="CoinShader.h" />
-    <ClInclude Include="Collision.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="NoiseFunctions.h" />
     <ClInclude Include="Game.h" />
@@ -202,7 +201,6 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CameraMovement.cpp" />
     <ClCompile Include="CoinShader.cpp" />
-    <ClCompile Include="Collision.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="NoiseFunctions.cpp" />
     <ClCompile Include="Game.cpp" />

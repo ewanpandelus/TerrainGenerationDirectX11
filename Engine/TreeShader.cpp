@@ -99,7 +99,7 @@ bool TreeShader::InitStandard(ID3D11Device* device, WCHAR* vsFilename, WCHAR* ps
 	return true;
 }
 
-bool TreeShader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::SimpleMath::Matrix* world, DirectX::SimpleMath::Matrix* view, DirectX::SimpleMath::Matrix* projection, Light* sceneLight1, float time, ID3D11ShaderResourceView* texture1)
+bool TreeShader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::SimpleMath::Matrix* world, DirectX::SimpleMath::Matrix* view, DirectX::SimpleMath::Matrix* projection, Light* sceneLight1, DirectX::SimpleMath::Vector3 assignedColor, ID3D11ShaderResourceView* texture1)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	MatrixBufferType* dataPtr;
@@ -115,7 +115,7 @@ bool TreeShader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::Simp
 	dataPtr->world = tworld;// worldMatrix;
 	dataPtr->view = tview;
 	dataPtr->projection = tproj;
-	dataPtr->time = time;
+	dataPtr->assignedColour = assignedColor;
 
 	context->Unmap(m_matrixBuffer, 0);
 	context->VSSetConstantBuffers(0, 1, &m_matrixBuffer);	//note the first variable is the mapped buffer ID.  Corresponding to what you set in the VS

@@ -16,6 +16,7 @@ struct InputCommands
 	bool leftMouse;
 	bool rightMouse;
 	bool p;
+	bool h;
 };
 
 

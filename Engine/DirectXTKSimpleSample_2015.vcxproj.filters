@@ -71,7 +71,6 @@
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="RayTriangleIntersection.h" />
     <ClInclude Include="CameraMovement.h" />
-    <ClInclude Include="Collision.h" />
     <ClInclude Include="MouseRay.h" />
     <ClInclude Include="NoiseFunctions.h" />
     <ClInclude Include="PostProcessEffects.h">
@@ -135,7 +134,6 @@
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="RayTriangleIntersection.cpp" />
     <ClCompile Include="CameraMovement.cpp" />
-    <ClCompile Include="Collision.cpp" />
     <ClCompile Include="MouseRay.cpp" />
     <ClCompile Include="NoiseFunctions.cpp" />
     <ClCompile Include="PostProcessEffects.cpp">

@@ -74,6 +74,9 @@ void Input::Update()
 	if (kb.P) m_GameInput.p = true;
 	else m_GameInput.p = false;
 
+	if (kb.H) m_GameInput.h = true;
+	else m_GameInput.h = false;
+
 	float newX = mouse.x;
 	if (prevX != 0) {
 		if (newX != prevX) {

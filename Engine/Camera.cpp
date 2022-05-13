@@ -49,9 +49,6 @@ void Camera::Update()
 
 	
 
-	m_forward.x = sin((m_orientation.y) * 3.1415f / 180.0f);
-	m_forward.z = cos((m_orientation.y) * 3.1415f / 180.0f);
-	m_forward.Normalize();
 
 	m_forward.x = sin(m_orientation.x) * sin(m_orientation.y);
 	m_forward.y = cos(m_orientation.x);
