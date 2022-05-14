@@ -83,6 +83,10 @@ private:
     void RenderPlacedObjects(ID3D11DeviceContext* context);
     void RenderCollectables(ID3D11DeviceContext* context);
 
+    void SetupTerrainParamsGUI();
+    void SetupManualTerrainModificationGUI();
+    void SetupPostProcessGUI();
+
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -132,6 +136,8 @@ private:
     ModelClass																m_PlaneModel;
     ModelClass																m_CoinModel;
     ModelClass																m_TreeModel;
+    ModelClass																m_TreeModel2;
+    ModelClass																m_TreeModel3;
     ModelClass																m_BasicModel3;
 
     //RenderTextures
@@ -177,9 +183,8 @@ private:
 
 
     bool                                                                    m_lerpingPosition = false;
-    bool                                                                    m_playMode = true;
+    bool                                                                    m_playMode = false;
     bool                                                                    m_editTerrain = false;
-    bool                                                                    m_placeTrees = false;
     bool                                                                    m_smoothTerrainTransition = false;
     bool                                                                    m_hideGUI = false;
     bool                                                                    m_hoveringUI = false;

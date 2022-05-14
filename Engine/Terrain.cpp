@@ -124,10 +124,10 @@ void Terrain::Render(ID3D11DeviceContext* deviceContext)
 }
 std::vector<SimpleMath::Vector3> Terrain::randomPointsOnTerrain() {
 	std::vector<SimpleMath::Vector3> randPoints;
-	for (int i = 0; i < 200;i++)
+	for (int i = 0; i < 500;i++)
 	{
 		int index = rand() % ((m_terrainHeight - 1) * (m_terrainWidth - 1));
-		if (m_heightMap[index].y > 0.1 &&1-m_heightMap[index].ny<0.1) {
+		if (m_heightMap[index].y > 1 &&1-m_heightMap[index].ny<0.1 &&m_heightMap[index].y <3) {
 			randPoints.push_back(SimpleMath::Vector3(m_heightMap[index].x, m_heightMap[index].y, m_heightMap[index].z));
 		}
 
@@ -611,10 +611,12 @@ bool Terrain::GenerateHeightMap(ID3D11Device* device)
 			float inverseLerp = InverseLerp(minNoiseHeight, maxNoiseHeight, m_heightMap[index].y);
 			float inverted = Lerp(minNoiseHeight, maxNoiseHeight, 1 - inverseLerp);
 			if (m_inverseHeightmap) {
+	
 				m_heightMap[index].y = inverted + m_terrainOffset;
 			}
-			if ((m_inverseHeightmap && inverseLerp > (1 - (m_flattenPercentage / 100)) || (!m_inverseHeightmap && inverseLerp < (m_flattenPercentage / 100)))) {
-				m_heightMap[index].y = Lerp(minNoiseHeight, maxNoiseHeight, 0.1);
+			if(InverseLerp(minNoiseHeight, maxNoiseHeight, m_heightMap[index].y)< m_flattenPercentage/100)
+			{
+				m_heightMap[index].y = Lerp(minNoiseHeight,maxNoiseHeight, m_flattenPercentage/100);
 			}
 		}
 	}
@@ -823,7 +825,10 @@ int* Terrain::SetTerraceVal()
 {
 	return &m_terraceVal;
 }
-
+float* Terrain::SetFlattenPercentage()
+{
+	return &m_flattenPercentage;
+}
 float* Terrain::GetFrequency()
 {
 	return &m_frequency;
@@ -908,8 +913,6 @@ bool Terrain::GenerateHeightMapLerped(ID3D11Device* device)
 				CalculateMaxMinNoiseHeight(m_heightMap[index].newY, &minNoiseHeight, &maxNoiseHeight);
 				continue;
 			}
-
-
 			m_amplitude = initialAmp;
 			m_frequency = initialFrequency;
 			for (int octave = 0; octave < m_octaves; octave++) {
@@ -918,25 +921,24 @@ bool Terrain::GenerateHeightMapLerped(ID3D11Device* device)
 				m_amplitude *= m_persistance;
 				m_frequency *= m_lacunarity;
 			}
-
 			CalculateMaxMinNoiseHeight(noiseHeight, &minNoiseHeight, &maxNoiseHeight);
 			m_heightMap[index].newY = noiseHeight + (!m_inverseHeightmap * m_terrainOffset);
-
 		}
-
 	}
 	for (int j = 0; j < m_terrainHeight; j++)
 	{
 		for (int i = 0; i < m_terrainWidth; i++)
 		{
 			index = (m_terrainHeight * j) + i;
-			float inverseLerp = InverseLerp(minNoiseHeight, maxNoiseHeight, m_heightMap[index].newY);
+			float inverseLerp = InverseLerp(minNoiseHeight, maxNoiseHeight, m_heightMap[index].y);
 			float inverted = Lerp(minNoiseHeight, maxNoiseHeight, 1 - inverseLerp);
 			if (m_inverseHeightmap) {
+
 				m_heightMap[index].newY = inverted + m_terrainOffset;
 			}
-			if ((m_inverseHeightmap && inverseLerp > (1 - (m_flattenPercentage / 100)) || (!m_inverseHeightmap && inverseLerp < (m_flattenPercentage / 100)))) {
-				m_heightMap[index].newY = Lerp(minNoiseHeight, maxNoiseHeight, 0.1);
+			if (InverseLerp(minNoiseHeight, maxNoiseHeight, m_heightMap[index].y) < m_flattenPercentage / 100)
+			{
+				m_heightMap[index].newY = Lerp(minNoiseHeight, maxNoiseHeight, m_flattenPercentage / 100);
 			}
 		}
 	}

@@ -6,6 +6,7 @@ class PlacedObjects
 public:
 
 	~PlacedObjects();
+	void Initialise();
 	struct CoinObjectType
 	{
 		SimpleMath::Vector3 position;
@@ -15,8 +16,7 @@ public:
 	struct PlacedObjectType
 	{
 		SimpleMath::Vector3 position;
-		float colour[3] = {0.2,0.6,0.2};
-		float scale = 1;
+		short type = 1;
 	};
 
 	void AddToObjectPositions(SimpleMath::Vector3 objectPositions);
@@ -29,14 +29,23 @@ public:
 	void RemoveCoin(int index);
 	void DecreaseCoinScale();
 	void AssignCollected(int index);
-	float* SetSelectedColour();
+	float* GetTreeColour();
+	float* GetTree1Colour();
+	float* GetTree2Colour();
+	int* SetCurrentTreeSelected();
+	bool* GetPlaceTrees();
+
 
 private:
 
 	std::vector<PlacedObjectType> m_objectPositions;
 	std::vector<CoinObjectType> m_coins;
-	float m_selectedColour[3] = { 1,1,1 };
-
+	std::vector<float*> m_treeColours;
+	float m_treeColour[3] = { 1,1,1 };
+	float m_tree1Colour[3] = { 1,1,1 };
+	float m_tree2Colour[3] = { 1,1,1 };
+	bool m_placeTrees = false;
+	int m_currentTreeSelected = 0;
 
 };
 

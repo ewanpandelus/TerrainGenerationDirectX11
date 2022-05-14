@@ -4,17 +4,20 @@
 
 PlacedObjects::~PlacedObjects()
 {
-}
 
+}
+void PlacedObjects::Initialise()
+{
+	m_treeColours.push_back(&m_treeColour[0]);
+	m_treeColours.push_back(&m_tree1Colour[0]);
+	m_treeColours.push_back(&m_tree1Colour[2]);
+}
 
 void PlacedObjects::AddToObjectPositions(SimpleMath::Vector3 objectPosition) {
 	PlacedObjectType placedObj;
 	placedObj.position = objectPosition;
-	placedObj.colour[0] = m_selectedColour[0];
-	placedObj.colour[1] = m_selectedColour[1];
-	placedObj.colour[2] = m_selectedColour[2];
+	placedObj.type = m_currentTreeSelected;
 
-	//	placedObj.scale = 1 + (rand() % 2) / 10.0;
 
 	m_objectPositions.push_back(placedObj);
 
@@ -69,7 +72,23 @@ void PlacedObjects::DecreaseCoinScale()
 		RemoveCoin(deleteIndex);
 	}
 }
-float* PlacedObjects::SetSelectedColour()
+
+bool* PlacedObjects::GetPlaceTrees() {
+	return &m_placeTrees;
+}
+float* PlacedObjects::GetTreeColour()
 {
-	return &m_selectedColour[0];
+	return &m_treeColour[0];
+}
+float* PlacedObjects::GetTree1Colour()
+{
+	return &m_tree1Colour[0];
+}
+float* PlacedObjects::GetTree2Colour()
+{
+	return &m_tree2Colour[0];
+}
+int* PlacedObjects::SetCurrentTreeSelected()
+{
+	return &m_currentTreeSelected;
 }

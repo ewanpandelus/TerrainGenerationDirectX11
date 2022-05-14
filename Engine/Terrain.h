@@ -17,7 +17,7 @@ private:
 	int m_seed = 0;
 	float m_minHeight = 0;
 	float m_maxHeight = 0;
-	float m_flattenPercentage = 20;
+	float m_flattenPercentage = 0;
 	float m_bloomThreshold = 0;
 	float m_cameraYPos = 0;
 	std::vector<bool*> terrainTypes;
@@ -58,7 +58,6 @@ public:
 	~Terrain();
 	float GenerateValueWithActiveNoiseFunction(int i, int j, int terrainType);
 	float Redistribution(float nx, float ny, float exp);
-	float RidgeNoise(float x, float y);
 	bool Initialize(ID3D11Device*, int terrainWidth, int terrainHeight);
 	void Render(ID3D11DeviceContext*);
 	bool GenerateHeightMap(ID3D11Device*);
@@ -70,6 +69,7 @@ public:
 	void TerrainTypeTicked();
 	void ManipulateTerrain(int x, int z, ID3D11Device* device, int up);
 	void LerpTerrainHeight(ID3D11Device* device, float t);
+
 	std::vector<SimpleMath::Vector3> randomPointsOnTerrain();
 
 
@@ -103,6 +103,7 @@ public:
 	bool* GetOverwritesColour();
 	float GetCameraYPos();
 	float* SetTerrainHeightPosition();
+	float* SetFlattenPercentage();
 	int* SetSeed();
 	int* SetTerraceVal();
 	bool GetColourTerrain();

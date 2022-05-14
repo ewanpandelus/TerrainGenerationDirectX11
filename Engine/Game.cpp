@@ -39,7 +39,7 @@ void Game::Initialize(HWND window, int width, int height)
 {
 
     m_input.Initialise(window);
-
+    m_placedObjects.Initialise();
     m_deviceResources->SetWindow(window, width, height);
 
     m_deviceResources->CreateDeviceResources();
@@ -78,8 +78,8 @@ void Game::Initialize(HWND window, int width, int height)
     m_Light.setDirection(-0.8f, -1.0f, 0.0f);
 
     //setup camera
-    m_Camera01.setPosition(Vector3(0.0, 0.0f, 5.0f));
-    m_Camera01.setRotation(Vector3(90.0f, 89.5f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
+    m_Camera01.setPosition(Vector3(-.5f * 10, (m_Terrain.GetCameraYPos() * 0.1f * 10) + 5 * 10, 6.5f * 10));
+    m_Camera01.setRotation(Vector3(90.5f, 89.545f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
 
 
 #ifdef DXTK_AUDIO
@@ -494,6 +494,8 @@ void Game::CreateDeviceDependentResources()
     m_PlaneModel.InitializeModel(device, "plane.obj");
     m_CoinModel.InitializeModel(device, "coin.obj");
     m_TreeModel.InitializeModel(device, "tree.obj");
+    m_TreeModel2.InitializeModel(device, "tree2.obj");
+    m_TreeModel3.InitializeModel(device, "tree3.obj");
 
     m_BasicModel3.InitializeBox(device, 10.0f, 0.1f, 10.0f);	//box includes dimensions
 
@@ -545,61 +547,15 @@ void Game::SetupGUI()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
     ImGuiIO& io = ImGui::GetIO();
-
-    ImGui::Begin("Procedural Terrain Parameters");
-    ImGui::SliderFloat("Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
-    ImGui::SliderFloat("Frequency", m_Terrain.GetFrequency(), 0.0f, 2.0f);
-    ImGui::SliderFloat("Lacunarity", m_Terrain.GetLacunarity(), 0.0f, 1.0f);
-    ImGui::SliderFloat("Persistance", m_Terrain.GetPersistance(), 0.0f, 2.5f);
-    ImGui::SliderInt("Octaves", m_Terrain.GetOctaves(), 1.0f, 10.0f);
-    ImGui::SliderFloat("Terrain Y Position", m_Terrain.SetTerrainHeightPosition(), -10.0f, 10.0f);
-    ImGui::InputInt("Seed", m_Terrain.SetSeed(), 0, 10000);
-
-    ImGui::Checkbox("Use Worley Noise Heightmap", m_Terrain.GetWorleyNoise());
-    ImGui::Checkbox("Use Ridge Noise Heightmap", m_Terrain.GetRidgeNoise());
-    ImGui::Checkbox("Use Perlin Noise Heightmap", m_Terrain.GetFBMNoise());
-    if (*m_Terrain.GetFBMNoise() == true) {
-        ImGui::Checkbox("Terrace Perlin Heightmap", m_Terrain.GetTerraced());
-        ImGui::InputInt("Terrace Value", m_Terrain.SetTerraceVal(), 1, 30);
-    }
-    else {
-        *m_Terrain.GetTerraced() = false;
-    }
-    ImGui::Checkbox("Invert Terrain", m_Terrain.GetInverseHeightMap());
-    ImGui::Checkbox("Smooth Transition", &m_smoothTerrainTransition);
-
-
+    m_hoveringUI = io.WantCaptureMouse;
+    SetupTerrainParamsGUI();
+    SetupManualTerrainModificationGUI();
+    SetupPostProcessGUI();
     if (ImGui::IsMouseReleased(0))
     {
         m_Terrain.TerrainTypeTicked();
     }
 
-    ImGui::End();
-    ImGui::SetNextWindowSize(ImVec2(450, 100));
-    ImGui::Begin("Post Process Parameters");
-    ImGui::Checkbox("PostProcessOn", m_postProcessProperties.SetPostProcessImGUI());
-    ImGui::SliderFloat("Bloom Brightness", m_postProcessProperties.SetBloomBrightness(), 0.1f, 3.0f);
-    ImGui::SliderFloat("Bloom Blur Strength", m_postProcessProperties.SetBloomBlurRadius(), 0.1f, 3.0f);
-    ImGui::SetNextWindowSize(ImVec2(260, 260));
-    ImGui::End();
-    ImGui::Begin("Manually Modify Terrain");
-    ImGui::Checkbox("Modify Terrain with Mouse", &m_editTerrain);
-    ImGui::ColorEdit3("Placed Object Colour", m_placedObjects.SetSelectedColour());
-    m_hoveringUI = io.WantCaptureMouse;
-    ImGui::Checkbox("Place Trees", &m_placeTrees);
-    ImGui::Checkbox("Choose Terrain Colours", m_Terrain.SetColourTerrain());
-    if (m_Terrain.GetColourTerrain()) {
-        ImGui::Checkbox("Overwrite Terrain Texture Colours", m_Terrain.GetOverwritesColour());
-        ImGui::ColorEdit3("Water", m_Terrain.SetWaterColour());
-        ImGui::ColorEdit3("Sand", m_Terrain.SetSandColour());
-        ImGui::ColorEdit3("Grass", m_Terrain.SetGrassColour());
-        ImGui::ColorEdit3("Mellow Rock", m_Terrain.SetMellowSlopeColour());
-        ImGui::ColorEdit3("Steep Rock", m_Terrain.SetSteepSlopeColour());
-        ImGui::ColorEdit3("Snow", m_Terrain.SetSnowColour());
-    }
-    
-
-    ImGui::End();
 }
 bool Game::HandlePlaneInput() {
 
@@ -675,19 +631,37 @@ void Game::RenderPlacedObjects(ID3D11DeviceContext* context) {
     for (int i = 0;i < placedObjects.size();i++) {
         m_world = SimpleMath::Matrix::Identity; //set world back to identity
         currentObjPosition = SimpleMath::Matrix::CreateTranslation(placedObjects[i].position);
-        m_world = m_world * currentObjPosition;
-        m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, DirectX::SimpleMath::Vector3(placedObjects[i].colour[0]
-            , placedObjects[i].colour[1], placedObjects[i].colour[2]), m_waterTexture.Get());
-        m_TreeModel.Render(context);
+        m_world = m_world  * currentObjPosition;
+    
+        if(placedObjects[i].type ==0)
+        {
+            float* treeColour = m_placedObjects.GetTreeColour();
+            m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, DirectX::SimpleMath::Vector3(treeColour[0]
+                , treeColour[1], treeColour[2]), m_waterTexture.Get());
+            m_TreeModel.Render(context);
+        }
+        else if (placedObjects[i].type ==1) {
+            float* treeColour = m_placedObjects.GetTree1Colour();
+            m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, DirectX::SimpleMath::Vector3(treeColour[0]
+                , treeColour[1], treeColour[2]), m_waterTexture.Get());
+            m_TreeModel2.Render(context);
+        }
+        else  {
+            float* treeColour = m_placedObjects.GetTree2Colour();
+            m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, DirectX::SimpleMath::Vector3(treeColour[0]
+                , treeColour[1], treeColour[2]), m_waterTexture.Get());
+            m_TreeModel3.Render(context);
+        }
+      
     }
-    /*for (int i = 0;i < m_PositionsOnTerrain.size();i++) {
-       m_world = SimpleMath::Matrix::Identity; //set world back to identity
-       currentTreePosition = SimpleMath::Matrix::CreateTranslation(m_PositionsOnTerrain[i] + Vector3(0, 0.23, 0));
-      // treeScale = SimpleMath::Matrix::CreateScale(1 );
-       m_world = m_world * currentTreePosition;
-       m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_timer.GetTotalSeconds(), m_waterTexture.Get());
-       m_TreeModel.Render(context);
-   }*/
+   // for (int i = 0;i < m_positionsOnTerrain.size();i++) {
+   //    m_world = SimpleMath::Matrix::Identity; //set world back to identity
+   //    currentObjPosition = SimpleMath::Matrix::CreateTranslation(m_positionsOnTerrain[i] + Vector3(0, 0.23, 0));
+   //   // treeScale = SimpleMath::Matrix::CreateScale(1 );
+   //    m_world = m_world * currentObjPosition;
+   //    m_TreeShader.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, SimpleMath::Vector3(0.2,0.6,0.2), m_waterTexture.Get());
+   //    m_TreeModel.Render(context);
+   //}
 }
 void Game::RenderCollectables(ID3D11DeviceContext* context) {
     m_CoinShader.EnableShader(context);
@@ -696,7 +670,7 @@ void Game::RenderCollectables(ID3D11DeviceContext* context) {
     SimpleMath::Matrix coinScale = SimpleMath::Matrix::CreateScale(0.4);
     SimpleMath::Matrix currentObjectPosition = SimpleMath::Matrix::CreateTranslation(0, 0, 0);
     for (int i = 0; i < m_coins.size(); i++) {
-        m_world = SimpleMath::Matrix::Identity; //set world back to identity
+        m_world = SimpleMath::Matrix::Identity; 
         if (CompareVectorsApproxEqual(m_planeTransform, m_coins[i].position, 1)) {
             m_placedObjects.AssignCollected(i);
         }
@@ -716,7 +690,8 @@ void Game::PopulatePlacedObjectArrays()
 
 }
 void Game::RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos) {
-    if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) && (m_editTerrain || m_placeTrees)) {
+    if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) &&
+        (m_editTerrain || (m_placedObjects.GetPlaceTrees()))) {
 
         SimpleMath::Vector3 rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
         rayCast.Normalize();
@@ -726,7 +701,7 @@ void Game::RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos) {
             int editTerrainDirection = m_gameInputCommands.leftMouse ? 1 : -1;
             if (positionOnTerrain.x != -10) m_Terrain.ManipulateTerrain(positionOnTerrain.x, positionOnTerrain.z, device, editTerrainDirection);
         }
-        if (m_placeTrees) {
+        if (*m_placedObjects.GetPlaceTrees()==true) {
             m_placedObjects.AddToObjectPositions(positionOnTerrain + Vector3(0, 0.23, 0));
         }
 
@@ -760,6 +735,72 @@ void Game::OnDeviceRestored()
 {
     CreateDeviceDependentResources();
     CreateWindowSizeDependentResources();
+}
+void Game::SetupTerrainParamsGUI()
+{
+    ImGui::SetNextWindowSize(ImVec2(450, 320));
+    ImGui::Begin("Procedural Terrain Parameters");
+    ImGui::SliderFloat("Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
+    ImGui::SliderFloat("Frequency", m_Terrain.GetFrequency(), 0.0f, 2.0f);
+    ImGui::SliderFloat("Lacunarity", m_Terrain.GetLacunarity(), 0.0f, 1.0f);
+    ImGui::SliderFloat("Persistance", m_Terrain.GetPersistance(), 0.0f, 2.5f);
+    ImGui::SliderInt("Octaves", m_Terrain.GetOctaves(), 1.0f, 10.0f);
+    ImGui::SliderFloat("Terrain Y Position", m_Terrain.SetTerrainHeightPosition(), -10.0f, 10.0f);
+    ImGui::InputInt("Seed", m_Terrain.SetSeed(), 0, 10000);
+    ImGui::Checkbox("Use Worley Noise Heightmap", m_Terrain.GetWorleyNoise());
+    ImGui::Checkbox("Use Ridge Noise Heightmap", m_Terrain.GetRidgeNoise());
+    ImGui::Checkbox("Use Perlin Noise Heightmap", m_Terrain.GetFBMNoise());
+    if (*m_Terrain.GetFBMNoise() == true) {
+        ImGui::Checkbox("Terrace Perlin Heightmap", m_Terrain.GetTerraced());
+        ImGui::InputInt("Terrace Value", m_Terrain.SetTerraceVal(), 1, 30);
+    }
+    else {
+        *m_Terrain.GetTerraced() = false;
+    }
+    ImGui::Checkbox("Invert Terrain", m_Terrain.GetInverseHeightMap());
+    ImGui::SliderFloat("Flatten Terrain Percentage", m_Terrain.SetFlattenPercentage(),0,100);
+    ImGui::Checkbox("Smooth Transition", &m_smoothTerrainTransition);
+    ImGui::End();
+}
+void Game::SetupManualTerrainModificationGUI()
+{
+  
+    ImGui::Begin("Manually Modify Terrain");
+    ImGui::Checkbox("Modify Terrain with Mouse", &m_editTerrain);
+    int guiX = 260;
+    int guiY = 120;
+    ImGui::Checkbox("Choose Terrain Colours", m_Terrain.SetColourTerrain());
+    if (m_Terrain.GetColourTerrain()) {
+        guiX += 140;
+        guiY += 100;
+        ImGui::Checkbox("Overwrite Terrain Texture Colours", m_Terrain.GetOverwritesColour());
+        ImGui::ColorEdit3("Water", m_Terrain.SetWaterColour());
+        ImGui::ColorEdit3("Sand", m_Terrain.SetSandColour());
+        ImGui::ColorEdit3("Grass", m_Terrain.SetGrassColour());
+        ImGui::ColorEdit3("Mellow Rock", m_Terrain.SetMellowSlopeColour());
+        ImGui::ColorEdit3("Steep Rock", m_Terrain.SetSteepSlopeColour());
+        ImGui::ColorEdit3("Snow", m_Terrain.SetSnowColour());
+    }
+    ImGui::Checkbox("Place Trees", m_placedObjects.GetPlaceTrees());
+    if (*m_placedObjects.GetPlaceTrees() == true)
+    {
+        guiX = 550;
+        guiY += 100;
+        ImGui::SliderInt("Tree Variation", m_placedObjects.SetCurrentTreeSelected(), 0, 2);
+        ImGui::ColorEdit3("Tree Variation 1 Colour", m_placedObjects.GetTreeColour());
+        ImGui::ColorEdit3("Tree Variation 2 Colour", m_placedObjects.GetTree1Colour());
+        ImGui::ColorEdit3("Tree Variation 3 Colour", m_placedObjects.GetTree2Colour());
+    }
+    ImGui::SetWindowSize("Manually Modify Terrain", ImVec2(guiX, guiY));
+    ImGui::End();
+}
+void Game::SetupPostProcessGUI()
+{
+    ImGui::Begin("Post Process Parameters");
+    ImGui::Checkbox("Post Process On", m_postProcessProperties.SetPostProcessImGUI());
+    ImGui::SliderFloat("Bloom Brightness", m_postProcessProperties.SetBloomBrightness(), 0.1f, 3.0f);
+    ImGui::SliderFloat("Bloom Blur Strength", m_postProcessProperties.SetBloomBlurRadius(), 0.1f, 3.0f);
+    ImGui::End();
 }
 #pragma endregion
 
