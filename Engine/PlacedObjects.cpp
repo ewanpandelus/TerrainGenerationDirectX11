@@ -11,6 +11,8 @@ void PlacedObjects::Initialise()
 	m_treeColours.push_back(&m_treeColour[0]);
 	m_treeColours.push_back(&m_tree1Colour[0]);
 	m_treeColours.push_back(&m_tree1Colour[2]);
+	AddToCoinPositions(0);
+
 }
 
 void PlacedObjects::AddToObjectPositions(SimpleMath::Vector3 objectPosition) {
@@ -55,22 +57,21 @@ void PlacedObjects::AssignCollected(int index)
 {
 	m_coins[index].collected = true;
 }
-void PlacedObjects::DecreaseCoinScale()
+bool PlacedObjects::DecreaseCoinScale()
 {
 	int index = 0;
 	int deleteIndex = -1;
 	for each (CoinObjectType var in m_coins)
 	{
-		if (var.collected == true)
-		{
-			m_coins[index].scale -= 0.05f;
-		}
-		if (var.scale <= 0) deleteIndex = index;
+		if (var.collected == true) { m_coins[index].scale -= 0.05f; }
+		if (var.scale <= 0) { deleteIndex = index; }
+
 		index++;
 	}
 	if (deleteIndex >= 0) {
 		RemoveCoin(deleteIndex);
 	}
+	return (m_coins.size() == 0);
 }
 
 bool* PlacedObjects::GetPlaceTrees() {

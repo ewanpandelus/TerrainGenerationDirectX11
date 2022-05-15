@@ -27,7 +27,7 @@ public:
 	void ClearCoinPositions();
 	std::vector<CoinObjectType> GetCoins();
 	void RemoveCoin(int index);
-	void DecreaseCoinScale();
+	bool DecreaseCoinScale();
 	void AssignCollected(int index);
 	float* GetTreeColour();
 	float* GetTree1Colour();
@@ -46,6 +46,6 @@ private:
 	float m_tree2Colour[3] = { 1,1,1 };
 	bool m_placeTrees = false;
 	int m_currentTreeSelected = 0;
-
+	bool* m_selected;
 };
 

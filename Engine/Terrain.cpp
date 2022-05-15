@@ -122,18 +122,7 @@ void Terrain::Render(ID3D11DeviceContext* deviceContext)
 
 	return;
 }
-std::vector<SimpleMath::Vector3> Terrain::randomPointsOnTerrain() {
-	std::vector<SimpleMath::Vector3> randPoints;
-	for (int i = 0; i < 500;i++)
-	{
-		int index = rand() % ((m_terrainHeight - 1) * (m_terrainWidth - 1));
-		if (m_heightMap[index].y > 1 &&1-m_heightMap[index].ny<0.1 &&m_heightMap[index].y <3) {
-			randPoints.push_back(SimpleMath::Vector3(m_heightMap[index].x, m_heightMap[index].y, m_heightMap[index].z));
-		}
 
-	}
-	return randPoints;
-}
 bool Terrain::CalculateNormals()
 {
 	int i, j, index1, index2, index3, index, count;
@@ -840,45 +829,8 @@ std::vector<Triangle> Terrain::GetTriangleArray()
 {
 	return triangleArray;
 }
-void Terrain::SetBoxBounds(Box _box) {
-	int _xMin = INT8_MAX;
-	int _zMin = INT8_MAX;
-	int _xMax = INT8_MIN;
-	int _zMax = INT8_MIN;
-	for (int triangleCount = 0;triangleCount < 2;triangleCount++) {
-		for each (Triangle triangle in _box.triangles) {
-			for each (DirectX::SimpleMath::Vector3 pos in triangle.trianglePositions) {
-				if (pos.x < _xMin) {
-					_xMin = pos.x;
-				}
-				if (pos.x > _xMax) {
-					_xMax = pos.x;
-				}
-				if (pos.z < _zMin) {
-					_zMin = pos.z;
-				}
-				if (pos.z > _zMax) {
-					_zMax = pos.z;
-				}
-			}
-		}
-	}
-	_box.xMax = _xMax;
-	_box.xMin = _xMin;
-	_box.zMax = _zMax;
-	_box.zMin = _zMin;
-	boxArray.push_back(_box);
 
-}
-Box* Terrain::GetBoxAtPosition(float x, float z) {
-	for each (Box box in boxArray) {
-		if (x > box.xMin && x<box.xMax && z> box.zMin && z < box.zMax) {
-			return new Box(box);
-		}
-	}
-	return NULL;
 
-}
 bool Terrain::GenerateHeightMapLerped(ID3D11Device* device)
 {
 	bool result;

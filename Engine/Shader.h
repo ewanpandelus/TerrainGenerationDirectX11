@@ -18,7 +18,8 @@ public:
 	bool SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::SimpleMath::Matrix* world, DirectX::SimpleMath::Matrix* view, DirectX::SimpleMath::Matrix* projection, Light* sceneLight1,
 		ID3D11ShaderResourceView* texture1, ID3D11ShaderResourceView* texture2,
 		ID3D11ShaderResourceView* texture3, ID3D11ShaderResourceView* texture4,
-		ID3D11ShaderResourceView* texture5, ID3D11ShaderResourceView* texture6, float time, Terrain terrain);
+		ID3D11ShaderResourceView* texture5, ID3D11ShaderResourceView* texture6, float time, 
+		Terrain terrain, int won);
 	void EnableShader(ID3D11DeviceContext* context);
 
 private:
@@ -55,7 +56,7 @@ private:
 		DirectX::SimpleMath::Vector4 overwritesColour;
 		DirectX::SimpleMath::Vector4 waterColour;
 		DirectX::SimpleMath::Vector4 steepSlopeColour;
-		float pad3;
+		DirectX::SimpleMath::Vector4 wonGame;
 	};
 
 	//buffer to pass in camera world Position

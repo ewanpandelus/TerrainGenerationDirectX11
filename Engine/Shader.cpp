@@ -156,7 +156,7 @@ bool Shader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::SimpleMa
 
 bool Shader::SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::SimpleMath::Matrix* world, DirectX::SimpleMath::Matrix* view, DirectX::SimpleMath::Matrix* projection, Light* sceneLight1,
 	ID3D11ShaderResourceView* texture1, ID3D11ShaderResourceView* texture2,ID3D11ShaderResourceView* texture3, 
-	ID3D11ShaderResourceView* texture4, ID3D11ShaderResourceView* texture5, ID3D11ShaderResourceView* texture6, float time, Terrain terrain)
+	ID3D11ShaderResourceView* texture4, ID3D11ShaderResourceView* texture5, ID3D11ShaderResourceView* texture6, float time, Terrain terrain, int won)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	MatrixBufferType* dataPtr;
@@ -238,9 +238,9 @@ bool Shader::SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::S
 		terrainExtraPtr->steepSlopeColour = SimpleMath::Vector4::One;
 	}
 
+	float w = won ? 1 : 0;
 
-
-	terrainExtraPtr->pad3 = 0;
+	terrainExtraPtr->wonGame = SimpleMath::Vector4(w, w, w, w);
 	context->Unmap(m_terrainExtraVariablesBuffer, 0);
 	context->PSSetConstantBuffers(2, 1, &m_terrainExtraVariablesBuffer);
 //

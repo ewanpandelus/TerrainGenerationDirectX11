@@ -70,8 +70,6 @@
     </ClInclude>
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="RayTriangleIntersection.h" />
-    <ClInclude Include="CameraMovement.h" />
-    <ClInclude Include="MouseRay.h" />
     <ClInclude Include="NoiseFunctions.h" />
     <ClInclude Include="PostProcessEffects.h">
       <Filter>Rendering</Filter>
@@ -84,6 +82,9 @@
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="TreeShader.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyboxEffect.h">
       <Filter>Rendering</Filter>
     </ClInclude>
   </ItemGroup>
@@ -133,8 +134,6 @@
     </ClCompile>
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="RayTriangleIntersection.cpp" />
-    <ClCompile Include="CameraMovement.cpp" />
-    <ClCompile Include="MouseRay.cpp" />
     <ClCompile Include="NoiseFunctions.cpp" />
     <ClCompile Include="PostProcessEffects.cpp">
       <Filter>Rendering</Filter>
@@ -147,6 +146,9 @@
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="TreeShader.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyboxEffect.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
   </ItemGroup>
@@ -163,15 +165,12 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="skybox_common.hlsli">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="directx.ico">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="water.jpg">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="rock_texture2.jpg">
       <Filter>Assets</Filter>
     </Image>
     <Image Include="ground.jpg">
@@ -207,6 +206,12 @@
       <Filter>Assets</Filter>
     </FxCompile>
     <FxCompile Include="coin_vs.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="skybox_ps.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="skybox_vs.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
   </ItemGroup>

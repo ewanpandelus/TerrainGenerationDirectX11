@@ -70,7 +70,7 @@ public:
 	void ManipulateTerrain(int x, int z, ID3D11Device* device, int up);
 	void LerpTerrainHeight(ID3D11Device* device, float t);
 
-	std::vector<SimpleMath::Vector3> randomPointsOnTerrain();
+
 
 
 	float* SetWaterColour();
@@ -109,7 +109,7 @@ public:
 	bool GetColourTerrain();
 	std::vector<Triangle> GetTriangleArray();
 	float* GetAmplitude();
-	Box* GetBoxAtPosition(float x, float z);
+
 
 private:
 	bool CalculateNormals();
@@ -117,7 +117,6 @@ private:
 	bool InitializeBuffers(ID3D11Device*);
 	void RenderBuffers(ID3D11DeviceContext*);
 	void PopulateTriangles();
-	void SetBoxBounds(Box _box);
 	int FindActiveNoiseFunction();
 
 	bool m_terrainGeneratedToggle;

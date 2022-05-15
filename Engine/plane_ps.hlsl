@@ -74,21 +74,7 @@ float snoise(float2 v) {
     return 130.0 * dot(m, g);
 }
 
-float fbm(float2 st)
-{
-    // Initial values
-    float value = 0.0;
-    float amplitude = .5;
-    float frequency = 0.;
-    //
-    // Loop of octaves
-    for (int i = 0; i < 5; i++) {
-        value += amplitude * abs(snoise(st));
-        st *= 2.;
-        amplitude *= .5;
-    }
-    return value;
-}
+
 
 float ridge(float h, float offset) {
     h = abs(h);     // create creases

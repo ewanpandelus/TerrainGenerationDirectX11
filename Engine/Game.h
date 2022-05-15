@@ -10,14 +10,14 @@
 #include "Light.h"
 #include "Input.h"
 #include "Camera.h"
+#include <Audio.h>
 #include "RayTriangleIntersection.h"
 #include "RenderTexture.h"
 #include "Terrain.h"
-#include "CameraMovement.h"
-#include "MouseRay.h"
 #include "PlaneShader.h"
 #include "TreeShader.h"
 #include "PostProcess.h"
+#include "SkyboxEffect.h"
 #include "PlacedObjects.h"
 #include "PostProcessEffects.h"
 #include "CoinShader.h"
@@ -85,8 +85,9 @@ private:
 
     void SetupTerrainParamsGUI();
     void SetupManualTerrainModificationGUI();
-    void SetupPostProcessGUI();
-
+    void SetupExtraParametersGUI();
+    void CreateSkyBoxEffect(ID3D11DeviceContext* context, ID3D11Device* device);
+    void SetupSoundEffects();
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -115,7 +116,7 @@ private:
     //Cameras
     Camera																	m_Camera01;
 
-    //textures 
+    //Textures 
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        flatRock;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_groundTex;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_slopeRockTex;
@@ -125,6 +126,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_rockNormalTex;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_waterTexture;
 
+    //Skybox
+    std::unique_ptr<DX::SkyboxEffect>                                       m_skyboxEffect;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout>                               m_skyInputLayout;
     //Shaders
     Shader																	m_BasicShaderPair;
     CoinShader															    m_CoinShader;
@@ -147,21 +151,23 @@ private:
     RECT		                                                            m_ScreenDimensions;
 
 
-#ifdef DXTK_AUDIO
+
     std::unique_ptr<DirectX::AudioEngine>                                   m_audEngine;
     std::unique_ptr<DirectX::WaveBank>                                      m_waveBank;
-    std::unique_ptr<DirectX::SoundEffect>                                   m_soundEffect;
+    std::unique_ptr<DirectX::SoundEffect>                                   m_coinEffect;
+    std::unique_ptr<DirectX::SoundEffect>                                   m_popEffect;
+    std::unique_ptr<DirectX::SoundEffect>                                   m_song;
     std::unique_ptr<DirectX::SoundEffectInstance>                           m_effect1;
     std::unique_ptr<DirectX::SoundEffectInstance>                           m_effect2;
-#endif
 
 
-#ifdef DXTK_AUDIO
+
+
     uint32_t                                                                m_audioEvent;
     float                                                                   m_audioTimerAcc;
 
     bool                                                                    m_retryDefault;
-#endif
+
 
     DirectX::SimpleMath::Matrix                                             m_world;
     DirectX::SimpleMath::Matrix                                             m_view;
@@ -169,15 +175,15 @@ private:
     std::unique_ptr<BasicPostProcess>                                       m_postProcess;
     RayTriangleIntersection                                                 m_rayTriIntersect;
     PlacedObjects                                                           m_placedObjects;
-    MouseRay                                                                m_mouseRay;
-    CameraMovement                                                          m_CameraMovement;
     PostProcessEffects                                                      m_postProcessProperties;
-  
+    std::unique_ptr<DirectX::GeometricPrimitive>                            m_sky;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_cubemap;
 
 
     float                                                                   m_terrainLerpVal = 2;
     float                                                                   m_elapsedTime = 1;
     float                                                                   m_guiTimer = 0;
+    float                                                                   m_volume = 1;
     int                                                                     m_screenWidth;
     int                                                                     m_screenHeight;
 
@@ -188,6 +194,10 @@ private:
     bool                                                                    m_smoothTerrainTransition = false;
     bool                                                                    m_hideGUI = false;
     bool                                                                    m_hoveringUI = false;
+    bool                                                                    m_generatedLastFrame = false;
+    bool                                                                    m_soundEffect = false;
+    bool                                                                    m_wonGame = false;
+
     SimpleMath::Vector3                                                     m_positionBeforeLerp;
     SimpleMath::Vector3                                                     m_rotationBeforeLerp;
 
