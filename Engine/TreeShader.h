@@ -27,7 +27,7 @@ private:
 		DirectX::XMMATRIX world;
 		DirectX::XMMATRIX view;
 		DirectX::XMMATRIX projection;
-		DirectX::SimpleMath::Vector3 assignedColour;
+		float extra;
 	};
 
 	//buffer for information of a single light
@@ -38,7 +38,13 @@ private:
 		DirectX::SimpleMath::Vector3 position;
 		float padding;
 	};
-
+	struct ColourBufferType
+	{
+		DirectX::SimpleMath::Vector3 colour;
+		float pad1;
+		float pad2;
+		float pad3;
+	};
 
 	//buffer to pass in camera world Position
 	struct CameraBufferType
@@ -54,5 +60,6 @@ private:
 	ID3D11Buffer* m_matrixBuffer;
 	ID3D11SamplerState* m_sampleState;
 	ID3D11Buffer* m_lightBuffer;
+	ID3D11Buffer* m_colourBuffer;
 };
 

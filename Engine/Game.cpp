@@ -63,17 +63,24 @@ void Game::Initialize(HWND window, int width, int height)
     GetClientRect(window, &m_ScreenDimensions);
     m_fullscreenRect.left = 0;
     m_fullscreenRect.top = 0;
-    m_fullscreenRect.right = 800;
-    m_fullscreenRect.bottom = 600;
+    m_fullscreenRect.right = 1920;
+    m_fullscreenRect.bottom = 1080;
 
-    m_CameraViewRect.left = 500;
+    m_CameraViewRect.left = 0;
     m_CameraViewRect.top = 0;
-    m_CameraViewRect.right = 800;
-    m_CameraViewRect.bottom = 240;
+    m_CameraViewRect.right = 1920;
+    m_CameraViewRect.bottom = 1080;
+    m_diffuseLight[0] = 0.5f;
+    m_diffuseLight[1] = 0.5f;
+    m_diffuseLight[2] = 0.5f;
+
+    m_ambientLight[0] = 0.4f;
+    m_ambientLight[1] = 0.4f;
+    m_ambientLight[2] = 0.4f;
 
     //setup light
-    m_Light.setAmbientColour(0.4f, 0.4f, 0.6f, 1.0f);
-    m_Light.setDiffuseColour(0.6f, 0.6f, 0.6f, 1.0f);
+    m_Light.setAmbientColour(m_ambientLight[0], m_ambientLight[1], m_ambientLight[2], 1.0f);
+    m_Light.setDiffuseColour(m_diffuseLight[0], m_diffuseLight[1], m_diffuseLight[2], 1.0f);
     m_Light.setPosition(2.0f, 1.0f, 1.0f);
     m_Light.setDirection(-0.8f, -1.0f, 0.0f);
 
@@ -124,14 +131,19 @@ void Game::Tick()
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
-
+  
     auto device = m_deviceResources->GetD3DDevice();
     m_audEngine->SetMasterVolume(m_volume);
     Vector3 currentPosition = m_Camera01.getPosition();
     Vector3 inFront = m_Camera01.getForward();
+    m_Light.setAmbientColour(m_ambientLight[0], m_ambientLight[1], m_ambientLight[2], 1.0f);
+    m_Light.setDiffuseColour(m_diffuseLight[0], m_diffuseLight[1], m_diffuseLight[2], 1.0f);
     m_elapsedTime += m_timer.GetElapsedSeconds() * (1 - m_elapsedTime) + 0.002f;
     m_guiTimer += m_timer.GetElapsedSeconds();
-    m_wonGame = m_placedObjects.DecreaseCoinScale();
+    if (!m_wonGame) {
+        m_wonGame = m_placedObjects.DecreaseCoinScale();
+        if (m_wonGame && m_soundEffect) { m_winEffect->Play(); }
+    }
 
     if (m_terrainLerpVal < 1.0)
     {
@@ -153,7 +165,6 @@ void Game::Update(DX::StepTimer const& timer)
                 Vector3(90.5f, 89.545f, 0.0f), m_elapsedTime);
         }
     }
-
     if (m_gameInputCommands.p && m_elapsedTime > 0.5)
     {
         m_playMode = !m_playMode;
@@ -168,34 +179,7 @@ void Game::Update(DX::StepTimer const& timer)
     }
 
 
-    if (m_gameInputCommands.generate)
-    {
-  
-        if (m_smoothTerrainTransition)
-        {
-            m_Terrain.GenerateHeightMapLerped(device);
-            m_terrainLerpVal = 0;
-        }
-        else { m_Terrain.GenerateHeightMap(device); }
-
-     
-        if (!m_playMode)
-        {
-            SetStartLerpParameters();
-            if(!m_wonGame) PopulatePlacedObjectArrays();
-        }
-        else { 
-            m_wonGame = false; 
-        }
-
-      
-        if (!m_generatedLastFrame && m_soundEffect) {
-            m_popEffect->Play();
-        }
-        m_generatedLastFrame = true;
-    }
-    else { m_generatedLastFrame = false; }
-
+    GenerateTerrain(device);
 
     if (m_gameInputCommands.h && m_guiTimer>0.2)
     {
@@ -272,8 +256,9 @@ void Game::Render()
         m_slopeRockTex.Get(), m_snowTex.Get(), m_waterTexture.Get(), m_sandTex.Get(), m_timer.GetTotalSeconds(), m_Terrain, m_wonGame);
     m_Terrain.Render(context);
     
-    m_TreeShader.EnableShader(context);
+
     if (m_playMode) RenderCollectables(context);
+    m_TreeShader.EnableShader(context);
     RenderPlacedObjects(context);
 
     SimpleMath::Matrix scale = SimpleMath::Matrix::CreateScale(0.5);
@@ -295,16 +280,9 @@ void Game::Render()
         m_postProcess->SetEffect(BasicPostProcess::BloomBlur);
         m_postProcess->Process(context);
     }
-   else if (!m_hideGUI)
+    else if (!m_hideGUI)
     {
-        ImGui::Render();
-        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-        m_sprites->Begin();
-        m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::White);
-        m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::White);
-        m_font->DrawString(m_sprites.get(), L"Press H to Hide GUI", XMFLOAT2(10, 70), Colors::White);
-        if (m_wonGame) m_font->DrawString(m_sprites.get(), L"You win! Enjoy the party!!", XMFLOAT2(500, 10), Colors::White);
-        m_sprites->End();
+        DrawText();
     }
     m_Camera01.Update(); //Late update so plane is not jittery
 
@@ -361,16 +339,7 @@ void Game::RenderTexturePass1()
     if (!m_hideGUI) 
     {
         SetupGUI();
-        ImGui::Render();
-        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-        m_sprites->Begin();
-
-        m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::Azure);
-        m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::Azure);
-        m_font->DrawString(m_sprites.get(), L"Press H to Hide GUI", XMFLOAT2(10, 70), Colors::Azure);
-        if (m_wonGame) m_font->DrawString(m_sprites.get(), L"You win! Enjoy the party!!", XMFLOAT2(500, 10), Colors::White);
-        
-        m_sprites->End();
+        DrawText();
     }
  
   
@@ -502,10 +471,10 @@ void Game::CreateDeviceDependentResources()
     CreateDDSTextureFromFile(device, L"snow.dds", nullptr, m_snowTex.ReleaseAndGetAddressOf());
     CreateDDSTextureFromFile(device, L"sand.dds", nullptr, m_sandTex.ReleaseAndGetAddressOf());
     CreateDDSTextureFromFile(device, L"rock.dds", nullptr, m_slopeRockTex.ReleaseAndGetAddressOf());
-    CreateDDSTextureFromFile(device, L"water2.dds", nullptr, m_waterTexture.ReleaseAndGetAddressOf());
+    CreateDDSTextureFromFile(device, L"water.dds", nullptr, m_waterTexture.ReleaseAndGetAddressOf());
 
     //Initialise 
-    m_FirstRenderPass = new RenderTexture(device, 1920, 1015, 1, 2);
+    m_FirstRenderPass = new RenderTexture(device, 1920, 1080, 1, 2);
     m_postProcess = std::make_unique<BasicPostProcess>(device);
     CreateSkyBoxEffect(context, device);
 
@@ -534,7 +503,39 @@ void Game::CreateWindowSizeDependentResources()
     );
     m_skyboxEffect->SetProjection(m_projection);
 }
+void Game::GenerateTerrain(ID3D11Device* device)
+{
 
+    if (m_gameInputCommands.generate)
+    {
+        m_placedObjects.ClearObjectPositions();
+        if (m_smoothTerrainTransition)
+        {
+            m_Terrain.GenerateHeightMapLerped(device);
+            m_terrainLerpVal = 0;
+        }
+        else { m_Terrain.GenerateHeightMap(device); }
+
+
+        if (!m_playMode)
+        {
+            SetStartLerpParameters();
+
+        }
+        else
+        {
+            PopulatePlacedObjectArrays();
+            m_wonGame = false;
+        }
+
+
+        if (!m_generatedLastFrame && m_soundEffect) {
+            m_popEffect->Play();
+        }
+        m_generatedLastFrame = true;
+    }
+    else { m_generatedLastFrame = false; }
+}
 void Game::SetupGUI()
 {
     ImGui_ImplDX11_NewFrame();
@@ -598,6 +599,10 @@ void Game::SetStartLerpParameters()
     m_positionBeforeLerp = m_Camera01.getPosition();
     m_rotationBeforeLerp = m_Camera01.getRotation();
     m_elapsedTime = 0;
+    if (m_playMode) {
+        PopulatePlacedObjectArrays();
+        m_wonGame = false;
+    }
 }
 
 XMVECTOR Game::RayCastDirectionOfMouse(SimpleMath::Vector3 terrainPos, float terrainScale, SimpleMath::Vector3 terrainOrientation)
@@ -672,13 +677,13 @@ void Game::RenderCollectables(ID3D11DeviceContext* context) {
 void Game::PopulatePlacedObjectArrays()
 {
     m_placedObjects.ClearCoinPositions();
-    m_placedObjects.ClearObjectPositions();
+ 
     m_placedObjects.AddToCoinPositions(m_Terrain.GetCameraYPos());
 
 }
 void Game::RayCasting(ID3D11Device* device, SimpleMath::Vector3 currentPos) {
     if ((m_gameInputCommands.leftMouse || m_gameInputCommands.rightMouse) &&
-        (m_editTerrain || (m_placedObjects.GetPlaceTrees()))) {
+        (m_editTerrain || (*m_placedObjects.GetPlaceTrees()==true))) {
 
         SimpleMath::Vector3 rayCast = RayCastDirectionOfMouse(SimpleMath::Vector3(0.0f, -0.6f, 0.0f), 1, SimpleMath::Vector3(0.0f, 0.0f, 0.0f));
         rayCast.Normalize();
@@ -792,8 +797,23 @@ void Game::SetupExtraParametersGUI()
     ImGui::SliderFloat("Bloom Brightness", m_postProcessProperties.SetBloomBrightness(), 0.1f, 3.0f);
     ImGui::SliderFloat("Bloom Blur Strength", m_postProcessProperties.SetBloomBlurRadius(), 0.1f, 3.0f);
     ImGui::SliderFloat("Sound Volume",&m_volume, 0, 1);
-    ImGui::Checkbox("Sound Effects",&m_soundEffect);
+    ImGui::Checkbox("Sound Effects", &m_soundEffect);
+    ImGui::ColorEdit3("Diffuse Light Colour", m_diffuseLight);
+    ImGui::ColorEdit3("Ambient Light Colour", m_ambientLight);
     ImGui::End();
+}
+void Game::DrawText() {
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    m_sprites->Begin();
+    m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::OrangeRed);
+    m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::OrangeRed);
+    m_font->DrawString(m_sprites.get(), L"Press H to Hide GUI", XMFLOAT2(10, 70), Colors::OrangeRed);
+    if (m_wonGame) {
+
+        m_font->DrawString(m_sprites.get(), L"You win! Enjoy the party!", XMFLOAT2(800, 10), Colors::OrangeRed);
+    }
+    m_sprites->End();
 }
 void Game::SetupSoundEffects()
 {
@@ -813,7 +833,8 @@ void Game::SetupSoundEffects()
     m_coinEffect = std::make_unique<SoundEffect>(m_audEngine.get(), L"coin.wav");
     m_popEffect = std::make_unique<SoundEffect>(m_audEngine.get(), L"pop.wav");
     m_song = std::make_unique<SoundEffect>(m_audEngine.get(), L"song.wav");
- 
+    m_winEffect = std::make_unique<SoundEffect>(m_audEngine.get(), L"success.wav");
+   
     m_effect1 = m_song->CreateInstance();
     m_effect1->Play(true);
     m_audEngine->SetMasterVolume(0.2f);

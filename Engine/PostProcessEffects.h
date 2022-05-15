@@ -13,8 +13,8 @@ public:
 	bool* SetPostProcessImGUI();
 	bool  GetPostProcess();
 private:
-	float m_bloomBrightness =0.1;
-	float m_bloomBlurStrength = 0.1;
+	float m_bloomBrightness =1.4;
+	float m_bloomBlurStrength = 0.5;
 	bool m_postProcess = false;
 };
 

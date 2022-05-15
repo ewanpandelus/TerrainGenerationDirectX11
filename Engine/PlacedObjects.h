@@ -41,9 +41,9 @@ private:
 	std::vector<PlacedObjectType> m_objectPositions;
 	std::vector<CoinObjectType> m_coins;
 	std::vector<float*> m_treeColours;
-	float m_treeColour[3] = { 1,1,1 };
-	float m_tree1Colour[3] = { 1,1,1 };
-	float m_tree2Colour[3] = { 1,1,1 };
+	float m_treeColour[3] = { 0.2,0.5,0.2 };
+	float m_tree1Colour[3] = { 0.6,0.4,0.2 };
+	float m_tree2Colour[3] = { 0.5,0.2,0.2 };
 	bool m_placeTrees = false;
 	int m_currentTreeSelected = 0;
 	bool* m_selected;

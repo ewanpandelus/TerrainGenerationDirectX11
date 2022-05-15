@@ -4,7 +4,7 @@ cbuffer MatrixBuffer : register(b0)
     matrix worldMatrix;
     matrix viewMatrix;
     matrix projectionMatrix;
-    float3 assignedColor;
+    float pad;
 };
 
 struct InputType
@@ -21,9 +21,6 @@ struct OutputType
     float2 tex : TEXCOORD0;
     float3 normal : NORMAL;
     float3 position3D : TEXCOORD2;
-    float3 assignedColor : COLOR;
-
-
 };
 
 OutputType main(InputType input)
@@ -31,7 +28,6 @@ OutputType main(InputType input)
     OutputType output;
 
     input.position.w = 1.0f;
-    output.assignedColor = assignedColor;
     output.position = mul(input.position, worldMatrix);
 
     // Store the texture coordinates for the pixel shader.
@@ -45,9 +41,7 @@ OutputType main(InputType input)
     float waveLength = 10;
 
 
-    float3 p = output.position.xyz;
-
-    p.y = sin(p.x);
+   
 
 
 

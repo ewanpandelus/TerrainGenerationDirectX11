@@ -16,7 +16,7 @@ bool TreeShader::InitStandard(ID3D11Device* device, WCHAR* vsFilename, WCHAR* ps
 	D3D11_BUFFER_DESC	matrixBufferDesc;
 	D3D11_SAMPLER_DESC	samplerDesc;
 	D3D11_BUFFER_DESC	lightBufferDesc;
-
+	D3D11_BUFFER_DESC	colourBufferDesc;
 	//LOAD SHADER:	VERTEX
 	auto vertexShaderBuffer = DX::ReadData(vsFilename);
 	HRESULT result = device->CreateVertexShader(vertexShaderBuffer.data(), vertexShaderBuffer.size(), NULL, &m_vertexShader);
@@ -77,7 +77,16 @@ bool TreeShader::InitStandard(ID3D11Device* device, WCHAR* vsFilename, WCHAR* ps
 
 	// Create the constant buffer pointer so we can access the vertex shader constant buffer from within this class.
 	device->CreateBuffer(&lightBufferDesc, NULL, &m_lightBuffer);
-
+	
+	colourBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	colourBufferDesc.ByteWidth = sizeof(LightBufferType);
+	colourBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	colourBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	colourBufferDesc.MiscFlags = 0;
+	colourBufferDesc.StructureByteStride = 0;
+	
+	
+	device->CreateBuffer(&colourBufferDesc, NULL, &m_colourBuffer);
 	// Create a texture sampler state description.
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -104,6 +113,7 @@ bool TreeShader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::Simp
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	MatrixBufferType* dataPtr;
 	LightBufferType* lightPtr;
+	ColourBufferType* colourPtr;
 	DirectX::SimpleMath::Matrix  tworld, tview, tproj;
 
 	// Transpose the matrices to prepare them for the shader.
@@ -115,7 +125,7 @@ bool TreeShader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::Simp
 	dataPtr->world = tworld;// worldMatrix;
 	dataPtr->view = tview;
 	dataPtr->projection = tproj;
-	dataPtr->assignedColour = assignedColor;
+	dataPtr->extra = 0;
 
 	context->Unmap(m_matrixBuffer, 0);
 	context->VSSetConstantBuffers(0, 1, &m_matrixBuffer);	//note the first variable is the mapped buffer ID.  Corresponding to what you set in the VS
@@ -129,6 +139,17 @@ bool TreeShader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::Simp
 	lightPtr->padding = 0.0f;
 	context->Unmap(m_lightBuffer, 0);
 	context->PSSetConstantBuffers(0, 1, &m_lightBuffer);	//note the first variable is the mapped buffer ID.  Corresponding to what you set in the PS
+
+	context->Map(m_colourBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	colourPtr = (ColourBufferType*)mappedResource.pData;
+	colourPtr->colour = assignedColor;
+	colourPtr->pad1 = 0;
+	colourPtr->pad2 = 0;
+	colourPtr->pad3 = 0;
+	context->Unmap(m_colourBuffer, 0);
+	context->PSSetConstantBuffers(1, 1, &m_colourBuffer);	//note the first variable is the mapped buffer ID.  Corresponding to what you set in the PS
+
+
 
 	//pass the desired texture to the pixel shader.
 	if (texture1 != NULL)

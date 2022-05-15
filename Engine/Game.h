@@ -80,6 +80,7 @@ private:
     void LerpPositionAndRotation(SimpleMath::Vector3 expectedPosition, SimpleMath::Vector3 expectedRotation, float t);
     void PopulatePlacedObjectArrays();
 
+    void GenerateTerrain(ID3D11Device* device);
     void RenderPlacedObjects(ID3D11DeviceContext* context);
     void RenderCollectables(ID3D11DeviceContext* context);
 
@@ -88,6 +89,7 @@ private:
     void SetupExtraParametersGUI();
     void CreateSkyBoxEffect(ID3D11DeviceContext* context, ID3D11Device* device);
     void SetupSoundEffects();
+    void DrawText();
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -112,6 +114,10 @@ private:
     std::unique_ptr<DirectX::NormalMapEffect>                               m_normalMapEffect;
     //lights
     Light																	m_Light;
+    float                                                                  m_diffuseLight[3];
+    float                                                                  m_ambientLight[3];
+
+
 
     //Cameras
     Camera																	m_Camera01;
@@ -156,6 +162,7 @@ private:
     std::unique_ptr<DirectX::WaveBank>                                      m_waveBank;
     std::unique_ptr<DirectX::SoundEffect>                                   m_coinEffect;
     std::unique_ptr<DirectX::SoundEffect>                                   m_popEffect;
+    std::unique_ptr<DirectX::SoundEffect>                                   m_winEffect;
     std::unique_ptr<DirectX::SoundEffect>                                   m_song;
     std::unique_ptr<DirectX::SoundEffectInstance>                           m_effect1;
     std::unique_ptr<DirectX::SoundEffectInstance>                           m_effect2;
@@ -195,7 +202,7 @@ private:
     bool                                                                    m_hideGUI = false;
     bool                                                                    m_hoveringUI = false;
     bool                                                                    m_generatedLastFrame = false;
-    bool                                                                    m_soundEffect = false;
+    bool                                                                    m_soundEffect = true;
     bool                                                                    m_wonGame = false;
 
     SimpleMath::Vector3                                                     m_positionBeforeLerp;
