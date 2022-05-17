@@ -19,6 +19,7 @@ bool Shader::InitStandard(ID3D11Device* device, WCHAR* vsFilename, WCHAR* psFile
 	D3D11_BUFFER_DESC	lightBufferDesc;
 	D3D11_BUFFER_DESC   terrainBufferDesc;
 	D3D11_BUFFER_DESC   terrainExtraBufferDesc;
+	D3D11_BUFFER_DESC   otherBufferDesc;
 	//LOAD SHADER:	VERTEX
 	auto vertexShaderBuffer = DX::ReadData(vsFilename);
 	HRESULT result = device->CreateVertexShader(vertexShaderBuffer.data(), vertexShaderBuffer.size(), NULL, &m_vertexShader);
@@ -87,7 +88,7 @@ bool Shader::InitStandard(ID3D11Device* device, WCHAR* vsFilename, WCHAR* psFile
 
 	// Create the constant buffer pointer so we can access the vertex shader constant buffer from within this class.
 	device->CreateBuffer(&terrainBufferDesc, NULL, &m_terrainColourBuffer);
-	
+
 	terrainExtraBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	terrainExtraBufferDesc.ByteWidth = sizeof(LightBufferType);
 	terrainExtraBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -96,6 +97,15 @@ bool Shader::InitStandard(ID3D11Device* device, WCHAR* vsFilename, WCHAR* psFile
 	terrainExtraBufferDesc.StructureByteStride = 0;
 
 	device->CreateBuffer(&terrainExtraBufferDesc, NULL, &m_terrainExtraVariablesBuffer);
+
+	otherBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	otherBufferDesc.ByteWidth = sizeof(LightBufferType);
+	otherBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	otherBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	otherBufferDesc.MiscFlags = 0;
+	otherBufferDesc.StructureByteStride = 0;
+
+	device->CreateBuffer(&otherBufferDesc, NULL, &m_otherVariablesBufferType);
 
 
 	// Create a texture sampler state description.
@@ -155,7 +165,7 @@ bool Shader::SetShaderParameters(ID3D11DeviceContext* context, DirectX::SimpleMa
 }
 
 bool Shader::SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::SimpleMath::Matrix* world, DirectX::SimpleMath::Matrix* view, DirectX::SimpleMath::Matrix* projection, Light* sceneLight1,
-	ID3D11ShaderResourceView* texture1, ID3D11ShaderResourceView* texture2,ID3D11ShaderResourceView* texture3, 
+	ID3D11ShaderResourceView* texture1, ID3D11ShaderResourceView* texture2, ID3D11ShaderResourceView* texture3,
 	ID3D11ShaderResourceView* texture4, ID3D11ShaderResourceView* texture5, ID3D11ShaderResourceView* texture6, float time, Terrain terrain, int won)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -164,6 +174,8 @@ bool Shader::SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::S
 	TimeBufferType* timePtr;
 	TerrainColourBufferType* terrainColourPtr;
 	TerrainExtraVariablesBufferType* terrainExtraPtr;
+	OtherVariablesBufferType* otherPtr;
+
 
 	DirectX::SimpleMath::Matrix  tworld, tview, tproj;
 
@@ -188,7 +200,7 @@ bool Shader::SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::S
 	lightPtr->diffuse = sceneLight1->getDiffuseColour();
 	lightPtr->position = sceneLight1->getPosition();
 	lightPtr->padding = time;
-	
+
 
 
 	//	context->PSSetConstantBuffers(1, 1, &timePtr);	//note the first variable is the mapped buffer ID.  Corresponding to what you set in the PS
@@ -208,13 +220,13 @@ bool Shader::SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::S
 		terrainColourPtr->sandColour = SimpleMath::Vector4(sandColour[0], sandColour[1], sandColour[2], 1);
 		terrainColourPtr->grassColour = SimpleMath::Vector4(grassColour[0], grassColour[1], grassColour[2], 1);
 		terrainColourPtr->mellowSlopeColour = SimpleMath::Vector4(mellowSlopeColour[0], mellowSlopeColour[1], mellowSlopeColour[2], 1);
-		terrainColourPtr->snowColour = SimpleMath::Vector4(snowColour[0], snowColour[1], snowColour[2], 1);
+
 	}
 	else {
 		terrainColourPtr->sandColour = SimpleMath::Vector4::One;
 		terrainColourPtr->grassColour = SimpleMath::Vector4::One;
 		terrainColourPtr->mellowSlopeColour = SimpleMath::Vector4::One;
-		terrainColourPtr->snowColour = SimpleMath::Vector4::One;
+		terrainColourPtr->excess1 = 0;
 	}
 	context->Unmap(m_terrainColourBuffer, 0);
 	context->PSSetConstantBuffers(1, 1, &m_terrainColourBuffer);
@@ -231,19 +243,28 @@ bool Shader::SetShaderParametersTerrain(ID3D11DeviceContext* context, DirectX::S
 
 		terrainExtraPtr->waterColour = SimpleMath::Vector4(waterColour[0], waterColour[1], waterColour[2], 1);
 		terrainExtraPtr->steepSlopeColour = SimpleMath::Vector4(steepSlopeColour[0], steepSlopeColour[1], steepSlopeColour[2], 1);
-		
+
 	}
 	else {
 		terrainExtraPtr->waterColour = SimpleMath::Vector4::One;
 		terrainExtraPtr->steepSlopeColour = SimpleMath::Vector4::One;
 	}
+	terrainExtraPtr->excess = 0;
 
-	float w = won ? 1 : 0;
-
-	terrainExtraPtr->wonGame = SimpleMath::Vector4(w, w, w, w);
 	context->Unmap(m_terrainExtraVariablesBuffer, 0);
 	context->PSSetConstantBuffers(2, 1, &m_terrainExtraVariablesBuffer);
-//
+
+	context->Map(m_otherVariablesBufferType, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	otherPtr = (OtherVariablesBufferType*)mappedResource.pData;
+	otherPtr->snowColour = SimpleMath::Vector4(snowColour[0], snowColour[1], snowColour[2], 1);
+
+	float w = won ? 1 : 0;
+	otherPtr->winGame = w;
+	otherPtr->pad1 = 0;
+	otherPtr->pad2 = 0;
+
+	context->Unmap(m_otherVariablesBufferType, 0);
+	context->PSSetConstantBuffers(3, 1, &m_otherVariablesBufferType);
 	//pass the desired texture to the pixel shader.
 	context->PSSetShaderResources(0, 1, &texture1);
 	context->PSSetShaderResources(1, 1, &texture2);

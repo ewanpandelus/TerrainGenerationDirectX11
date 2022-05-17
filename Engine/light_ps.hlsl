@@ -21,14 +21,22 @@ cbuffer TerrainColourBuffer : register(b1)
 	float4 sandColour;
 	float4 grassColour;
 	float4 mellowSlopeColour;
-	float4 snowColour;
+	float4 excess;
 };
 cbuffer TerrainExtraVariablesBuffer : register(b2)
 {
 	float4 overwritesColour;
 	float4 waterColour;
 	float3 steepSlopeColour;
+	float4 excess2;
+};
+cbuffer OtherVariablesBuffer : register(b3)
+{
+	float4 snowColour;
 	float4 wonGame;
+	float pad1;
+	float pad2;
+
 };
 struct InputType
 {
@@ -155,10 +163,10 @@ float4  RockTexBlend(float slope, float4 textureColor, float4 grassColor, float4
 	return textureColor;
 }
 float4 ScaleTexAllDirections(Texture2D _tex, float3 scaledWorldPos, float3 blendAxes) {
-	float3 xProj = _tex.Sample(SampleType, scaledWorldPos.xy*4) * blendAxes.x;
-	float3 yProj = _tex.Sample(SampleType, scaledWorldPos.xz*4) * blendAxes.y;
-	float3 zProj = _tex.Sample(SampleType, scaledWorldPos.xy*4) * blendAxes.z;
-	return float4((xProj+yProj+zProj)/3, 1);
+	float3 xProj = _tex.Sample(SampleType, scaledWorldPos.xy * 4) * blendAxes.x;
+	float3 yProj = _tex.Sample(SampleType, scaledWorldPos.xz * 4) * blendAxes.y;
+	float3 zProj = _tex.Sample(SampleType, scaledWorldPos.xy * 4) * blendAxes.z;
+	return float4((xProj + yProj + zProj) / 3, 1);
 }
 
 float4 OverwriteColour(float4 texColour) {
@@ -166,7 +174,7 @@ float4 OverwriteColour(float4 texColour) {
 	return float4(average, average, average, 1);
 }
 float4 TwoTextureBlendByHeight(float4 tex1, float4 tex2, float offset, float rangeTo1, float y) {
-	return lerp(tex1, tex2, saturate((y + offset)*(1/rangeTo1)));
+	return lerp(tex1, tex2, saturate((y + offset) * (1 / rangeTo1)));
 }
 float4 main(InputType input) : SV_TARGET
 {
@@ -181,7 +189,7 @@ float4 main(InputType input) : SV_TARGET
 	float4 snowTex;
 	float4 waterTex;
 	float4 sandTex;
- 
+
 	float4 darkWaterColour;
 	float4 lightWaterColour;
 
@@ -197,25 +205,25 @@ float4 main(InputType input) : SV_TARGET
 	waterTex = waterTexture.Sample(SampleType, input.tex / 5);
 	sandTex = sandTexture.Sample(SampleType, input.tex / 2);
 
-	if (overwritesColour.x == 1) 
+	if (overwritesColour.x == 1)
 	{
 		grassTex = OverwriteColour(grassTex);
 		slopeTex = OverwriteColour(slopeTex);
-		rockTex  = OverwriteColour(rockTex);
-		snowTex  = OverwriteColour(snowTex);
+		rockTex = OverwriteColour(rockTex);
+		snowTex = OverwriteColour(snowTex);
 		waterTex = OverwriteColour(waterTex);
-		sandTex  = OverwriteColour(sandTex);
+		sandTex = OverwriteColour(sandTex);
 	}
 	grassTex *= grassColour;
 	slopeTex *= float4(steepSlopeColour,1);
-	rockTex  *= mellowSlopeColour;
-	snowTex  *= snowColour;
+	rockTex *= mellowSlopeColour;
+	snowTex *= snowColour;
 	waterTex *= waterColour;
-	sandTex  *= sandColour;
+	sandTex *= sandColour;
 
 	darkWaterColour = waterTex * float4(0.4, 0.4, 0.4, 1);
 	lightWaterColour = waterTex * float4(1.0, 1.0, 1.0, 1.0);
-	
+
 
 
 
@@ -226,10 +234,10 @@ float4 main(InputType input) : SV_TARGET
 
 	float slope;
 
-	   
+
 	// Calculate the slope of this point.
 	slope = 1 - input.normal.y;
-	
+
 
 
 	float4 grassSlope = RockTexBlend(slope, textureColor, grassTex, slopeTex, rockTex);          //lerp((grassTex), slopeTex, slope + 0.15);
@@ -240,17 +248,17 @@ float4 main(InputType input) : SV_TARGET
 		textureColor = darkWaterColour;
 	}
 	if (input.position3D.y >= -0.7 && input.position3D.y < -0.1) {
-		textureColor = lerp(darkWaterColour, lightWaterColour, (input.position3D.y+0.7)*1/0.66);
+		textureColor = lerp(darkWaterColour, lightWaterColour, (input.position3D.y + 0.7) * 1 / 0.66);
 	}
 	if (input.position3D.y >= -0.1 && input.position3D.y <= 0) {
 		textureColor = lerp(lightWaterColour, sandTex, (input.position3D.y + 0.1) * 10);
 	}
-	if (input.position3D.y < 2&& input.position3D.y >0) {
-		textureColor = lerp(sandTex, grassSlope, (input.position3D.y)/2);
-		
+	if (input.position3D.y < 2 && input.position3D.y >0) {
+		textureColor = lerp(sandTex, grassSlope, (input.position3D.y) / 2);
+
 	}
-	if (input.position3D.y <=4 && input.position3D.y >= 2) {
-		textureColor = lerp(grassSlope, snowSlope, (input.position3D.y - 2)/2);
+	if (input.position3D.y <= 4 && input.position3D.y >= 2) {
+		textureColor = lerp(grassSlope, snowSlope, (input.position3D.y - 2) / 2);
 	}
 	if (input.position3D.y > 4) {
 		textureColor = snowSlope;
@@ -263,28 +271,28 @@ float4 main(InputType input) : SV_TARGET
 	// Determine the final amount of diffuse color based on the diffuse color combined with the light intensity.
 	color = ambientColor + (diffuseColor * lightIntensity); //adding ambient
 	color = saturate(color);
-	
 
 
-	float2 uvsCentred = (input.tex/(6+cos(padding/10)*4));
+
+	float2 uvsCentred = (input.tex / (6 + cos(padding / 10) * 4));
 	float radialDistance = length(uvsCentred);
 
 
-	
-
-	float3 rings = cos((radialDistance * lerp(input.normal, 1-input.normal, radialDistance) - padding * 0.01) * 3.14 * 10);
 
 
-	float f = ridgedMF(input.tex/4 + padding/20);
+	float3 rings = cos((radialDistance * lerp(input.normal, 1 - input.normal, radialDistance) - padding * 0.01) * 3.14 * 10);
 
-	
+
+	float f = ridgedMF(input.tex / 4 + padding / 20);
+
+
 	float4 fadeBetweenNormalAndInverted = saturate(float4(lerp(input.normal, 1 - input.normal, cos(padding)), 1) * f);
 	float4 result = lerp(fadeBetweenNormalAndInverted, float4(rings, 1), 0.4);
-	
+
 
 	float4 terrainColour = color * textureColor;
 
-	float4 psychadelicIfWon = lerp(terrainColour, terrainColour * result, wonGame.x);
+	float4 psychedelicIfWon = lerp(terrainColour, terrainColour * result, wonGame.x);
 
-	return psychadelicIfWon;
+	return psychedelicIfWon;
 }

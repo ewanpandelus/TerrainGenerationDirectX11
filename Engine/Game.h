@@ -191,6 +191,7 @@ private:
     float                                                                   m_elapsedTime = 1;
     float                                                                   m_guiTimer = 0;
     float                                                                   m_volume = 1;
+    float                                                                   m_planeSpeed = 1;
     int                                                                     m_screenWidth;
     int                                                                     m_screenHeight;
 

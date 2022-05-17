@@ -150,7 +150,7 @@ void Game::Update(DX::StepTimer const& timer)
         m_Terrain.LerpTerrainHeight(device, m_terrainLerpVal);
         m_terrainLerpVal += (0.06f * (1 - m_terrainLerpVal)) + 0.02f;
     }
-    if(!m_hoveringUI) RayCasting(device, currentPosition);
+    if(!m_hoveringUI||m_hideGUI) RayCasting(device, currentPosition);
     
     if (m_lerpingPosition)
     {
@@ -175,7 +175,7 @@ void Game::Update(DX::StepTimer const& timer)
     {
         HandlePlaneInput();
         m_planeTransform = m_Camera01.getPosition() + inFront * 3;
-        m_Camera01.setPosition(currentPosition + inFront * 0.2f);
+        m_Camera01.setPosition(currentPosition + (inFront * 0.2f*m_planeSpeed));
     }
 
 
@@ -574,7 +574,7 @@ bool Game::HandlePlaneInput() {
     {
         rotation.x = rotation.x -= m_Camera01.getRotationSpeed() / 3;
     }
-    rotation.y = rotation.y -= rotation.z * (m_Camera01.getRotationSpeed())/2.7;
+    rotation.y = rotation.y -= rotation.z * (m_Camera01.getRotationSpeed()*m_planeSpeed)/2.7;
     m_Camera01.setRotation(rotation);
     m_Camera01.setPosition(currentPosition);
     return true;
@@ -747,7 +747,7 @@ void Game::SetupTerrainParamsGUI()
     ImGui::Checkbox("Use Perlin Noise Heightmap", m_Terrain.GetFBMNoise());
     if (*m_Terrain.GetFBMNoise() == true) {
         ImGui::Checkbox("Terrace Perlin Heightmap", m_Terrain.GetTerraced());
-        ImGui::InputInt("Terrace Value", m_Terrain.SetTerraceVal(), 1, 30);
+        ImGui::InputInt("Terrace Level", m_Terrain.SetTerraceVal(), 1, 30);
     }
     else {
         *m_Terrain.GetTerraced() = false;
@@ -791,7 +791,7 @@ void Game::SetupManualTerrainModificationGUI()
 }
 void Game::SetupExtraParametersGUI()
 {
-    ImGui::SetNextWindowSize(ImVec2(300, 200));
+    ImGui::SetNextWindowSize(ImVec2(500, 210));
     ImGui::Begin("Extra Parameters");
     ImGui::Checkbox("Post Process On", m_postProcessProperties.SetPostProcessImGUI());
     ImGui::SliderFloat("Bloom Brightness", m_postProcessProperties.SetBloomBrightness(), 0.1f, 3.0f);
@@ -800,19 +800,16 @@ void Game::SetupExtraParametersGUI()
     ImGui::Checkbox("Sound Effects", &m_soundEffect);
     ImGui::ColorEdit3("Diffuse Light Colour", m_diffuseLight);
     ImGui::ColorEdit3("Ambient Light Colour", m_ambientLight);
+    ImGui::SliderFloat("Plane Speed", &m_planeSpeed, 0.01f, 1.5f);
     ImGui::End();
 }
 void Game::DrawText() {
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
     m_sprites->Begin();
-    m_font->DrawString(m_sprites.get(), L"Press Space to Generate Terrain", XMFLOAT2(10, 10), Colors::OrangeRed);
-    m_font->DrawString(m_sprites.get(), L"Press P to Enter/Exit View-Mode", XMFLOAT2(10, 40), Colors::OrangeRed);
-    m_font->DrawString(m_sprites.get(), L"Press H to Hide GUI", XMFLOAT2(10, 70), Colors::OrangeRed);
-    if (m_wonGame) {
-
-        m_font->DrawString(m_sprites.get(), L"You win! Enjoy the party!", XMFLOAT2(800, 10), Colors::OrangeRed);
-    }
+    m_font->DrawString(m_sprites.get(), L"Press SPACE to generate terrain", XMFLOAT2(10, 10), Colors::OrangeRed);
+    m_font->DrawString(m_sprites.get(), L"Press P to alternate view & play mode", XMFLOAT2(10, 40), Colors::OrangeRed);
+    m_font->DrawString(m_sprites.get(), L"Press H to hide GUI", XMFLOAT2(10, 70), Colors::OrangeRed);
     m_sprites->End();
 }
 void Game::SetupSoundEffects()
